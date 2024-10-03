@@ -1,212 +1,233 @@
 package parser
 
 import (
-	"errors"
 	"fmt"
-	"strings"
 )
 
-type ASTNodeType string
-
-const (
-	ASSIGNMENT_NODE   ASTNodeType = "Assignment"
-	EMPTY_NODE        ASTNodeType = "Empty"
-	ROOT_NODE         ASTNodeType = "Root"
-	STRING_NODE       ASTNodeType = "String"
-	EOF_NODE          ASTNodeType = "EOF"
-	NUMBER_NODE       ASTNodeType = "Number"
-	IDENTIFIER_NODE   ASTNodeType = "Identifier"
-	CORE_VAR_VAR_NODE ASTNodeType = "var"
-	CORE_VAR_AVP_NODE ASTNodeType = "avp"
-	ERROR_NODE        ASTNodeType = "Error"
-)
-
-type ASTNode struct {
-	Name  interface{}
-	Type  ASTNodeType
-	Value interface{}
-}
-
-func (n *ASTNode) String() string {
-	// if value is of type []*ASTNode, do not print the value
-	_, ok := n.Value.([]*ASTNode)
-	if !ok {
-		return fmt.Sprintf("ASTNode{Name: %v, Type: %v, Value: %v}", n.Name, n.Type, n.Value)
-	}
-	return fmt.Sprintf("ASTNode{Name: %v, Type: %v, Value: * }", n.Name, n.Type)
-}
-
-var EmptyNode = &ASTNode{Name: nil, Type: EMPTY_NODE, Value: nil}
-
-func (n *ASTNode) addChild(child *ASTNode) error {
-	if n.Value == nil {
-		n.Value = []*ASTNode{child}
-	} else {
-		// assert n.Value is []*ASTNode
-		if _, ok := n.Value.([]*ASTNode); !ok {
-			return errors.New("Value is not a slice of ASTNode")
-		}
-		n.Value = append(n.Value.([]*ASTNode), child)
-	}
-	return nil
-}
-
-func (n *ASTNode) getChild(index int) (*ASTNode, error) {
-	if n.Value == nil {
-		return nil, errors.New("No children found")
-	}
-	// assert n.Value is []*ASTNode
-	if _, ok := n.Value.([]*ASTNode); !ok {
-		return nil, errors.New("Value is not a slice of ASTNode")
-	}
-	if index < 0 || index >= len(n.Value.([]*ASTNode)) {
-		return nil, errors.New("Index out of range")
-	}
-	return n.Value.([]*ASTNode)[index], nil
-}
-
-func (n *ASTNode) getChildByName(name string) (*ASTNode, error) {
-	if n.Value == nil {
-		return nil, errors.New("No children found")
-	}
-	// assert n.Value is map[string]*ASTNode
-	if _, ok := n.Value.(map[string]*ASTNode); !ok {
-		return nil, errors.New("Value is not a map of string to ASTNode")
-	}
-	if _, ok := n.Value.(map[string]*ASTNode)[name]; !ok {
-		return nil, errors.New("Name not found")
-	}
-	return n.Value.(map[string]*ASTNode)[name], nil
-}
-
-// Combinators
-func seq(parsers ...func() *ASTNode) func() *[]ASTNode {
-	return func() *[]ASTNode {
-		var nodes *[]ASTNode
-		for _, parser := range parsers {
-			node := parser()
-			if node == nil {
-				return nil // Fail if any parser in the sequence fails
-			}
-			if nodes == nil {
-				nodes = &[]ASTNode{*node}
-			} else {
-				// Adding sibling nodes
-				*nodes = append(*nodes, *node)
-			}
-		}
-		return nodes
-	}
-}
-
-func choice(parsers ...func() *ASTNode) func() *ASTNode {
-	return func() *ASTNode {
-		for _, parser := range parsers {
-			node := parser()
-			if node != nil {
-				return node // Return the first successful parser
-			}
-		}
-		return nil
-	}
-}
-
-func optional(parser func() *ASTNode) func() *ASTNode {
-	return func() *ASTNode {
-		node := parser()
-		if node == nil {
-			return EmptyNode
-		}
-		return node
-	}
-}
-
+// TODO: use logging instead of fmt.Println
 type Parser struct {
 	tokens []Token
 	pos    int
 	Root   *ASTNode
 }
 
+func (p *Parser) updateASTLevel() {
+	p.Root.level = 0
+	p.updateASTLevelRecursive(p.Root)
+}
+
+func (p *Parser) updateASTLevelRecursive(node *ASTNode) {
+	if node.Value == nil {
+		return
+	}
+	if _, ok := node.Value.([]*ASTNode); !ok {
+		// it is a leaf node
+		return
+	}
+	for _, child := range node.Value.([]*ASTNode) {
+		child.level = node.level + 1
+		p.updateASTLevelRecursive(child)
+	}
+}
+
 func NewParser(tokens []Token) *Parser {
 	return &Parser{
 		tokens: tokens,
 		pos:    0,
+		Root:   nil,
 	}
 }
 
-func (p *Parser) Parse() *ASTNode {
-	r := &ASTNode{
-		Name: nil,
-		Type: ROOT_NODE,
+func (p *Parser) peek() Token {
+	if p.pos >= len(p.tokens) {
+		return nil
 	}
-	sibs := seq(
-		p.parseAssignment,
+	return p.tokens[p.pos]
+}
+
+func (p *Parser) next() Token {
+	if p.pos >= len(p.tokens) {
+		return nil
+	}
+	p.pos++
+	return p.tokens[p.pos-1]
+}
+
+func (p *Parser) consume(t TokenType) bool {
+	if p.peek().Type() == t {
+		p.pos++
+		return true
+	}
+	return false
+}
+
+func (p *Parser) parseEOS() *ASTNode {
+	// fmt.Println("Parsing EOS")
+	if p.peek().Type() == EOF {
+		return errorNode("Expected semicolon but got EOF")
+	}
+	if p.consume(SEMICOLON) {
+		return &ASTNode{Name: nil, Type: EOS_NODE, Value: nil, level: 0}
+	}
+	return errorNode("Expected semicolon but got " + p.tokens[p.pos].Literal().(string))
+}
+
+func (p *Parser) parseBlock() *ASTNode {
+	// fmt.Println("Parsing block")
+	if p.peek().Type() == EOF {
+		return errorNode("Expected block but got EOF")
+	}
+	if p.consume(LBRACE) {
+		node := parseWithSeq(BLOCK_NODE, p.parseStatement)
+		if node.Type == ERROR_NODE {
+			return errorNode("Error parsing block")
+		}
+		if p.consume(RBRACE) {
+			return node
+		}
+		return errorNode("Expected closing brace but got " + p.tokens[p.pos].Literal().(string))
+	}
+	return errorNode("Expected opening brace but got " + p.tokens[p.pos].Literal().(string))
+
+}
+
+func (p *Parser) parseFileStarter() *ASTNode {
+	// fmt.Println("Parsing file starter")
+	if p.peek().Type() == EOF {
+		return errorNode("Expected file starter but got EOF")
+	}
+	if p.consume(PREPROC) {
+		starter, ok := p.tokens[p.pos-1].Literal().(string)
+		if !ok {
+			return errorNode("Invalid file starter " + p.tokens[p.pos].Literal().(string))
+		}
+		switch starter {
+		case "SER":
+			fallthrough
+		case "KAMAILIO":
+			fallthrough
+		case "OPENSER":
+			fallthrough
+		case "MAXCOMPAT":
+			fallthrough
+		case "ALL":
+			return &ASTNode{
+				Name:  nil,
+				Type:  FILE_STARTER_NODE,
+				Value: starter,
+			}
+		default:
+			return errorNode("Invalid file starter " + starter)
+		}
+
+	}
+	return errorNode("Expected file starter but got " + p.tokens[p.pos].Literal().(string))
+}
+
+func (p *Parser) parseTopLevelStatement() *ASTNode {
+	// fmt.Println("Parsing top level statement")
+	if p.peek().Type() == EOF {
+		return errorNode("Expected top level statement but got EOF")
+	}
+	child := choice(
+		p.parseFileStarter,
+		p.parseTopLevelAssignment,
+		p.parseBlock,
 		p.parseEOF,
 	)()
-	for _, sib := range *sibs {
-		err := r.addChild(&sib)
-		if err != nil {
-			fmt.Println("Error adding sib")
-		}
+	if child == nil {
+		return errorNode("Error parsing top level statement")
 	}
-	p.Root = r
-	p.Root.Print(0)
-	return p.Root
-}
-
-func (p *Parser) parseEOF() *ASTNode {
-	if p.tokens[p.pos].Type() == EOF {
-		p.pos++
-		return &ASTNode{Name: nil, Type: EOF_NODE, Value: nil}
-	}
-	return nil
-}
-
-func (p *Parser) parseAssignment() *ASTNode {
-
-	left := p.assingnment_left_side()
-	if left == nil {
-		fmt.Println("left is nil")
-		return nil
-	}
-	x := p.parseOperator()
-	if x == nil {
-		fmt.Println("x is nil")
-	}
-	right := p.assignment_right_side()
-	if right == nil {
-		fmt.Println("right is nil")
-		return nil
-	}
-	// create a new node
 	node := &ASTNode{
-		Name:  nil,
-		Type:  ASSIGNMENT_NODE,
-		Value: nil,
+		Name:   nil,
+		Type:   TOP_LEVEL_STATEMENT_NODE,
+		Value:  nil,
+		Parent: nil,
+		level:  0,
 	}
-	err := node.addChild(left)
+	err := node.addChild(child)
 	if err != nil {
-		fmt.Println("Error adding left")
-	}
-
-	err = node.addChild(right)
-	if err != nil {
-		fmt.Println("Error adding right")
+		fmt.Println("Error adding children to statement node")
 	}
 	return node
 }
 
+func (p *Parser) parseStatement() *ASTNode {
+	// fmt.Println("Parsing statement")
+	if p.peek().Type() == EOF {
+		return errorNode("Expected identifier or core variable but got EOF")
+	}
+	// TODO: make this a choice
+	node := seq(p.parseAssignment, p.parseEOS)()
+	if node == nil {
+		return errorNode("Error parsing statement")
+	}
+	node.Type = STATEMENT_NODE
+	return node
+}
+
+func (p *Parser) setAsRoot(node *ASTNode) {
+	p.Root = node
+	p.Root.Parent = nil
+	p.Root.Type = ROOT_NODE
+	p.updateASTLevel()
+}
+
+func (p *Parser) parseEOF() *ASTNode {
+	if p.consume(EOF) {
+		return &ASTNode{Name: nil, Type: EOF_NODE, Value: nil, level: 0}
+	}
+	return errorNode("Expected EOF but got " + p.tokens[p.pos].Literal().(string))
+}
+
+func (p *Parser) parseTopLevelAssignment() *ASTNode {
+	// fmt.Println("Parsing top level assignment")
+	if p.peek().Type() == EOF {
+		return errorNode("Expected identifier or core variable but got EOF")
+	}
+	return parseWithSeq(
+		ASSIGNMENT_NODE,
+		p.assingnment_left_side,
+		p.parseAssignOperator,
+		p.assignment_right_side)
+}
+
+func (p *Parser) parseAssignment() *ASTNode {
+	// fmt.Println("ParsingAssignment")
+	if p.peek().Type() == EOF {
+		return errorNode("Expected identifier or core variable but got EOF")
+	}
+
+	return parseWithSeq(
+		ASSIGNMENT_NODE,
+		p.assingnment_left_side,
+		p.parseAssignOperator,
+		p.assignment_right_side)
+
+}
+
 func (p *Parser) assingnment_left_side() *ASTNode {
-	l := choice(
+	// fmt.Println("Parsing assignment left side")
+	if p.peek().Type() == EOF {
+		return errorNode("Expected identifier or core variable but got EOF")
+	}
+	left := choice(
 		p.parseIdentifier,
 		p.ParseCoreVariable,
 	)()
-	l.Name = "left"
-	return l
+	if left == nil {
+		return errorNode("Expected identifier or core variable but got " + p.tokens[p.pos].Literal().(string))
+	}
+	left.Name = "left"
+	return left
 }
 
 func (p *Parser) ParseCoreVariable() *ASTNode {
-	if p.tokens[p.pos].Type() == CORE_VARIABLE {
+	// fmt.Println("Parsing core variable")
+	if p.peek().Type() == EOF {
+		return errorNode("Expected core variable but got EOF")
+	}
+	if p.consume(CORE_VARIABLE) {
 		coreVariableType := p.tokens[p.pos].(*CoreVariableToken).VariableType
 		cn := CORE_VAR_VAR_NODE
 		switch coreVariableType {
@@ -216,129 +237,129 @@ func (p *Parser) ParseCoreVariable() *ASTNode {
 			cn = CORE_VAR_AVP_NODE
 		}
 		node := &ASTNode{
-			Name: nil,
-			Type: cn,
-			Value: &ASTNode{
-				Name:  nil,
-				Type:  IDENTIFIER_NODE,
-				Value: p.tokens[p.pos].(*CoreVariableToken).Literal,
-			},
+			Name:  nil,
+			Type:  cn,
+			Value: nil,
 		}
-		p.pos++
-		fmt.Printf("ParseCoreVariable: %v\n", node)
+		child := &ASTNode{
+			Name:  nil,
+			Type:  IDENTIFIER_NODE,
+			Value: p.tokens[p.pos].(*CoreVariableToken).VariableName,
+		}
+		node.addChild(child)
 		return node
 	}
-	return nil
+
+	return errorNode("Expected core variable but got " + p.tokens[p.pos].Literal().(string))
 }
 
 func (p *Parser) assignment_right_side() *ASTNode {
-	r := choice(
+	// fmt.Println("Parsing assignment right side")
+	if p.peek().Type() == EOF {
+		return errorNode("Expected number, string or core variable but got EOF")
+	}
+	right := choice(
 		p.parseNumber,
 		p.parseString,
+		p.ParseCoreVariable,
 	)()
-	r.Name = "right"
-	return r
+	if right == nil {
+		return errorNode("Expected number, string or core variable but got " + p.tokens[p.pos].Literal().(string))
+	}
+	right.Name = "right"
+	return right
 }
 
 func (p *Parser) parseIdentifier() *ASTNode {
-	if p.tokens[p.pos].Type() == IDENT {
+	// fmt.Println("parseIdentifier")
+	if p.consume(IDENT) {
 		node := &ASTNode{
 			Name:  nil,
 			Type:  IDENTIFIER_NODE,
-			Value: p.tokens[p.pos].Literal().(string),
+			Value: p.tokens[p.pos-1].Literal().(string),
 		}
-		p.pos++
 		return node
 	}
-	return nil
+	if p.tokens[p.pos].Type() == EOF {
+		return errorNode("Expected identifier but got EOF")
+	}
+	return errorNode("Expected identifier but got " + p.tokens[p.pos].Literal().(string))
 }
 
 func (p *Parser) parseNumber() *ASTNode {
-	if p.tokens[p.pos].Type() == INT {
+	// fmt.Println("parseNumber")
+	if p.consume(INT) {
 		node := &ASTNode{
 			Name:  nil,
 			Type:  NUMBER_NODE,
-			Value: p.tokens[p.pos].Literal().(int),
+			Value: p.tokens[p.pos-1].Literal().(int),
 		}
-		p.pos++
 		return node
 	}
-	return nil
+	if p.tokens[p.pos].Type() == EOF {
+		return errorNode("Expected number but got EOF")
+	}
+	return errorNode("Expected number but got " + p.tokens[p.pos].Literal().(string))
 }
 
 func (p *Parser) parseString() *ASTNode {
-	if p.tokens[p.pos].Type() == STRING {
+	// fmt.Println("parseString")
+	if p.consume(STRING) {
 		node := &ASTNode{
 			Name:  nil,
 			Type:  STRING_NODE,
-			Value: p.tokens[p.pos].Literal().(string),
+			Value: p.tokens[p.pos-1].Literal().(string),
 		}
-		p.pos++
 		return node
 	}
-	return nil
+	if p.tokens[p.pos].Type() == EOF {
+		return errorNode("Expected string but got EOF")
+	}
+	return errorNode("Expected string but got " + p.tokens[p.pos].Literal().(string))
+}
+
+func (p *Parser) parseAssignOperator() *ASTNode {
+	// fmt.Println("parseAssignmentOperator")
+	if p.consume(ASSIGN) {
+		node := &ASTNode{
+			Name:  nil,
+			Type:  OPERATOR_NODE,
+			Value: "=",
+		}
+		return node
+	}
+	if p.tokens[p.pos].Type() == EOF {
+		return errorNode("Expected = but got EOF")
+	}
+	return errorNode("Expected assignment operator but got " + p.tokens[p.pos].Literal().(string))
 }
 
 func (p *Parser) parseOperator() *ASTNode {
-	if p.tokens[p.pos].Type() == ASSIGN {
-		node := &ASTNode{
-			Name:  nil,
-			Type:  ASSIGNMENT_NODE,
-			Value: "=",
-		}
-		p.pos++
-		return node
-	}
-	return nil
+	return choice(
+		p.parseAssignOperator,
+	)()
 }
 
-func (n *ASTNode) Equals(other *ASTNode) bool {
-
-	if (n.Name != nil && other.Name != nil) && n.Name != other.Name {
-		return false
+func parseWithSeq(nodeType ASTNodeType, parsers ...func() *ASTNode) *ASTNode {
+	node := seq(parsers...)()
+	if node == nil {
+		return errorNode(fmt.Sprintf("Error parsing %s", nodeType))
 	}
-
-	if n.Type != other.Type {
-		return false
-	}
-
-	if n.Value == nil && other.Value == nil {
-		return true
-	}
-
-	nSlice, nOk := n.Value.([]*ASTNode)
-	otherSlice, otherOk := other.Value.([]*ASTNode)
-	if nOk && otherOk {
-		// Compare lengths first to avoid out-of-bounds errors
-		if len(nSlice) != len(otherSlice) {
-			return false
-		}
-		// Compare each child node
-		for i, child := range nSlice {
-			if !child.Equals(otherSlice[i]) {
-				return false
-			}
-		}
-	} else if n.Value != other.Value {
-		// Directly compare values if they are not slices
-		return false
-	}
-
-	return true
+	node.Type = nodeType
+	return node
 }
-func (n *ASTNode) Print(ident int) {
-	if n == nil {
-		fmt.Println("nil")
-		return
-	}
 
-	fmt.Printf("%s%v\n", strings.Repeat("  ", ident), n)
-	if n.Value != nil {
-		if _, ok := n.Value.([]*ASTNode); ok {
-			for _, child := range n.Value.([]*ASTNode) {
-				child.Print(ident + 1)
-			}
-		}
+func (p *Parser) Parse() *ASTNode {
+	fmt.Printf("-----TOKENS------------\n")
+	for _, token := range p.tokens {
+		fmt.Printf("%v\n", token)
 	}
-
+	node := repeat(p.parseTopLevelStatement)()
+	eof := p.parseEOF()
+	if err := node.addChild(eof); err != nil {
+		fmt.Println("Error adding EOF to root node")
+	}
+	p.setAsRoot(node)
+	fmt.Printf("-----Parse Output------\n%v\n", p.Root)
+	return p.Root
 }

@@ -174,6 +174,21 @@ func TestLexer_Tokenise(t *testing.T) {
 			},
 		},
 		{
+			input: `#!KAMAILIO`,
+			expected: []parser.Token{
+				&parser.BasicToken{TypeVal: parser.PREPROC, LiteralVal: "KAMAILIO"},
+				&parser.EOFToken{},
+			},
+		},
+		// TODO: Fix this test
+		// {
+		// 	input: `!!KAMAILIO`,
+		// 	expected: []parser.Token{
+		// 		&parser.BasicToken{TypeVal: parser.PREPROC, LiteralVal: "KAMAILIO"},
+		// 		&parser.EOFToken{},
+		// 	},
+		// },
+		{
 			input: `#!include "file.so"`,
 			expected: []parser.Token{
 				&parser.BasicToken{TypeVal: parser.PREPROC, LiteralVal: "include"},

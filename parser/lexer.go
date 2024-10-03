@@ -253,7 +253,9 @@ func handleInt(match string) Token {
 
 func handleStringToken(tokenType TokenType) TokenHandler {
 	return func(match string) Token {
-		return &BasicToken{TypeVal: tokenType, LiteralVal: match[1 : len(match)-1]}
+		return &BasicToken{
+			TypeVal:    tokenType,
+			LiteralVal: match[1 : len(match)-1]}
 	}
 }
 
