@@ -39,6 +39,16 @@ const (
 	BANG byte = '!'
 )
 
+var routes = []string{
+	"route",
+	"request_route",
+	"onreply_route",
+	"failure_route",
+	"branch_route",
+	"local_route",
+	"startup_route",
+}
+
 var keywords = []string{
 	"return",
 	"break",
@@ -82,9 +92,7 @@ const (
 	PREPROC TokenType = "PREPROC"
 
 	// cfg specific keywords
-	REQUEST_ROUTE TokenType = "REQUEST_ROUTE"
-	REPLY_ROUTE   TokenType = "REPLY_ROUTE"
-	ROUTE         TokenType = "ROUTE"
+	ROUTE TokenType = "ROUTE"
 
 	// Operators and symbols
 	ELLIPSIS TokenType = "ELLIPSIS"
@@ -524,6 +532,9 @@ func sanitizeTokens(tokens []Token) []Token {
 			}
 			if token.(*BasicToken).isOneOfMany(defines...) {
 				token.(*BasicToken).TypeVal = PREPROC
+			}
+			if token.(*BasicToken).isOneOfMany(routes...) {
+				token.(*BasicToken).TypeVal = ROUTE
 			}
 		}
 	}

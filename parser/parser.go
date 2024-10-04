@@ -2,6 +2,8 @@ package parser
 
 import (
 	"fmt"
+	"reflect"
+	"strconv"
 )
 
 // TODO: use logging instead of fmt.Println
@@ -73,12 +75,13 @@ func (p *Parser) parseEOS() *ASTNode {
 }
 
 func (p *Parser) parseBlock() *ASTNode {
-	// fmt.Println("Parsing block")
+	// fmt.Println("Parsing block", p.peek().Type())
 	if p.peek().Type() == EOF {
 		return errorNode("Expected block but got EOF")
 	}
 	if p.consume(LBRACE) {
-		node := parseWithSeq(BLOCK_NODE, p.parseStatement)
+		node := repeat(p.parseStatement)()
+		node.Type = BLOCK_NODE
 		if node.Type == ERROR_NODE {
 			return errorNode("Error parsing block")
 		}
@@ -88,7 +91,6 @@ func (p *Parser) parseBlock() *ASTNode {
 		return errorNode("Expected closing brace but got " + p.tokens[p.pos].Literal().(string))
 	}
 	return errorNode("Expected opening brace but got " + p.tokens[p.pos].Literal().(string))
-
 }
 
 func (p *Parser) parseFileStarter() *ASTNode {
@@ -124,6 +126,112 @@ func (p *Parser) parseFileStarter() *ASTNode {
 	return errorNode("Expected file starter but got " + p.tokens[p.pos].Literal().(string))
 }
 
+func (p *Parser) parseRequestRouteKeyword() *ASTNode {
+	// fmt.Println("Parsing request route keyword")
+	if p.peek().Type() == EOF {
+		return errorNode("Expected request_route keyword but got EOF")
+	}
+	if p.consume(ROUTE) {
+		val := p.tokens[p.pos-1].Literal().(string) // consumed token
+		var route_type ASTNodeType
+		switch val {
+		case "request_route":
+			route_type = REQUEST_ROUTE_NODE
+		case "reply_route":
+			route_type = REPLY_ROUTE_NODE
+		case "failure_route":
+			route_type = FAILURE_ROUTE_NODE
+		case "onreply_route":
+			route_type = ONREPLY_ROUTE_NODE
+		case "branch_route":
+			route_type = BRANCH_ROUTE_NODE
+		case "local_route":
+			route_type = LOCAL_ROUTE_NODE
+		case "startup_route":
+			route_type = STARTUP_ROUTE_NODE
+		case "route":
+			route_type = ROUTE_NODE
+		default:
+			errorNode("Invalid route type " + val)
+		}
+		return &ASTNode{
+			Name:  nil,
+			Type:  route_type,
+			Value: nil,
+		}
+
+	}
+	return errorNode("Expected request_route keyword but got " + p.tokens[p.pos].Literal().(string))
+}
+
+func (p *Parser) parseRequestRouteName() *ASTNode {
+	// fmt.Println("Parsing request route name")
+	if p.peek().Type() == EOF {
+		return errorNode("Expected request_route name but got EOF")
+	}
+	// name should be  '[', identifier or number or string, ']'
+	if p.consume(LBRACKET) {
+		name := choice(
+			p.parseIdentifier,
+			p.parseNumber,
+			p.parseString,
+		)()
+		if name == nil {
+			return errorNode("Error parsing request_route name")
+		}
+		if p.consume(RBRACKET) {
+			return name
+		}
+		return errorNode("Expected closing bracket but got " + p.tokens[p.pos].Literal().(string))
+	}
+	return errorNode("Expected opening bracket but got " + p.tokens[p.pos].Literal().(string))
+}
+
+func (p *Parser) parseRequestRoute() *ASTNode {
+	// the format is as follows
+	// request_route [optional_name] Block
+	// fmt.Println("Parsing request route")
+	if p.peek().Type() == EOF {
+		return errorNode("Expected request_route but got EOF")
+	}
+	r := p.parseRequestRouteKeyword()
+	if r == nil ||
+		r.Type == ERROR_NODE ||
+		r.Type == EMPTY_NODE {
+		return errorNode("Error parsing request_route")
+	}
+
+	// By this point we have the route type
+	name := optional(p.parseRequestRouteName)()
+
+	if name != nil && name.Type != EMPTY_NODE {
+		var n interface{}
+		switch reflect.TypeOf(name.Value).Kind() {
+		case reflect.String:
+			n = name.Value.(string)
+		case reflect.Int:
+			n = strconv.Itoa(name.Value.(int))
+		default:
+			n = nil
+		}
+		r.Name = n
+	}
+
+	if r.Type == ROUTE_NODE && r.Name == nil {
+		r.addChild(errorNode("Route name is required"))
+	}
+
+	block := p.parseBlock()
+
+	if block == nil || block.Type == ERROR_NODE {
+		r.addChild(errorNode("Error parsing request_route block"))
+		return r
+	}
+
+	r.addChild(block)
+	return r
+}
+
 func (p *Parser) parseTopLevelStatement() *ASTNode {
 	// fmt.Println("Parsing top level statement")
 	if p.peek().Type() == EOF {
@@ -132,7 +240,8 @@ func (p *Parser) parseTopLevelStatement() *ASTNode {
 	child := choice(
 		p.parseFileStarter,
 		p.parseTopLevelAssignment,
-		p.parseBlock,
+		p.parseRequestRoute,
+		// p.parseBlock,
 		p.parseEOF,
 	)()
 	if child == nil {
@@ -197,7 +306,6 @@ func (p *Parser) parseAssignment() *ASTNode {
 	if p.peek().Type() == EOF {
 		return errorNode("Expected identifier or core variable but got EOF")
 	}
-
 	return parseWithSeq(
 		ASSIGNMENT_NODE,
 		p.assingnment_left_side,
@@ -228,7 +336,7 @@ func (p *Parser) ParseCoreVariable() *ASTNode {
 		return errorNode("Expected core variable but got EOF")
 	}
 	if p.consume(CORE_VARIABLE) {
-		coreVariableType := p.tokens[p.pos].(*CoreVariableToken).VariableType
+		coreVariableType := p.tokens[p.pos-1].(*CoreVariableToken).VariableType
 		cn := CORE_VAR_VAR_NODE
 		switch coreVariableType {
 		case "var":
@@ -244,12 +352,11 @@ func (p *Parser) ParseCoreVariable() *ASTNode {
 		child := &ASTNode{
 			Name:  nil,
 			Type:  IDENTIFIER_NODE,
-			Value: p.tokens[p.pos].(*CoreVariableToken).VariableName,
+			Value: p.tokens[p.pos-1].(*CoreVariableToken).VariableName,
 		}
 		node.addChild(child)
 		return node
 	}
-
 	return errorNode("Expected core variable but got " + p.tokens[p.pos].Literal().(string))
 }
 
@@ -272,27 +379,36 @@ func (p *Parser) assignment_right_side() *ASTNode {
 
 func (p *Parser) parseIdentifier() *ASTNode {
 	// fmt.Println("parseIdentifier")
-	if p.consume(IDENT) {
-		node := &ASTNode{
-			Name:  nil,
-			Type:  IDENTIFIER_NODE,
-			Value: p.tokens[p.pos-1].Literal().(string),
-		}
-		return node
-	}
 	if p.tokens[p.pos].Type() == EOF {
 		return errorNode("Expected identifier but got EOF")
 	}
-	return errorNode("Expected identifier but got " + p.tokens[p.pos].Literal().(string))
+
+	if p.consume(IDENT) {
+		value, ok := p.tokens[p.pos-1].Literal().(string)
+		if !ok {
+			return errorNode("Invalid identifier " + p.tokens[p.pos].Literal().(string))
+		}
+		node := &ASTNode{
+			Name:  nil,
+			Type:  IDENTIFIER_NODE,
+			Value: value,
+		}
+		return node
+	}
+	return errorNode("Expected identifier")
 }
 
 func (p *Parser) parseNumber() *ASTNode {
 	// fmt.Println("parseNumber")
 	if p.consume(INT) {
+		value, ok := p.tokens[p.pos-1].Literal().(int)
+		if !ok {
+			return errorNode("Invalid number " + p.tokens[p.pos].Literal().(string))
+		}
 		node := &ASTNode{
 			Name:  nil,
 			Type:  NUMBER_NODE,
-			Value: p.tokens[p.pos-1].Literal().(int),
+			Value: value,
 		}
 		return node
 	}
@@ -305,10 +421,14 @@ func (p *Parser) parseNumber() *ASTNode {
 func (p *Parser) parseString() *ASTNode {
 	// fmt.Println("parseString")
 	if p.consume(STRING) {
+		value, ok := p.tokens[p.pos-1].Literal().(string)
+		if !ok {
+			return errorNode("Invalid string " + p.tokens[p.pos].Literal().(string))
+		}
 		node := &ASTNode{
 			Name:  nil,
 			Type:  STRING_NODE,
-			Value: p.tokens[p.pos-1].Literal().(string),
+			Value: value,
 		}
 		return node
 	}

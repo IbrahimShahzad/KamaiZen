@@ -163,7 +163,7 @@ func TestParser_Parse(t *testing.T) {
 			input: []parser.Token{
 				&parser.BasicToken{TypeVal: parser.IDENT, LiteralVal: "x"},
 				&parser.BasicToken{TypeVal: parser.ASSIGN, LiteralVal: "="},
-				&parser.BasicToken{TypeVal: parser.STRING, LiteralVal: "string"},
+				&parser.BasicToken{TypeVal: parser.STRING, LiteralVal: "Hello World!"},
 				&parser.EOFToken{},
 			},
 			expected: &parser.ASTNode{
@@ -191,7 +191,7 @@ func TestParser_Parse(t *testing.T) {
 									{
 										Name:  "right",
 										Type:  parser.STRING_NODE,
-										Value: "string",
+										Value: "Hello World!",
 									},
 								},
 							},
@@ -235,6 +235,7 @@ func TestParser_Parse(t *testing.T) {
 		},
 		{
 			input: []parser.Token{
+				&parser.BasicToken{TypeVal: parser.ROUTE, LiteralVal: "request_route"},
 				&parser.BasicToken{TypeVal: parser.LBRACE, LiteralVal: "{"},
 				&parser.BasicToken{TypeVal: parser.IDENT, LiteralVal: "x"},
 				&parser.BasicToken{TypeVal: parser.ASSIGN, LiteralVal: "="},
@@ -253,37 +254,235 @@ func TestParser_Parse(t *testing.T) {
 						Value: []*parser.ASTNode{
 							{
 								Name: nil,
-								Type: parser.BLOCK_NODE,
+								Type: parser.REQUEST_ROUTE_NODE,
 								Value: []*parser.ASTNode{
 									{
 										Name: nil,
-										Type: parser.STATEMENT_NODE,
+										Type: parser.BLOCK_NODE,
 										Value: []*parser.ASTNode{
 											{
 												Name: nil,
-												Type: parser.ASSIGNMENT_NODE,
+												Type: parser.STATEMENT_NODE,
 												Value: []*parser.ASTNode{
 													{
-														Name:  "left",
-														Type:  parser.IDENTIFIER_NODE,
-														Value: "x",
+														Name: nil,
+														Type: parser.ASSIGNMENT_NODE,
+														Value: []*parser.ASTNode{
+															{
+																Name:  "left",
+																Type:  parser.IDENTIFIER_NODE,
+																Value: "x",
+															},
+															{
+																Name:  nil,
+																Type:  parser.OPERATOR_NODE,
+																Value: "=",
+															},
+															{
+																Name:  "right",
+																Type:  parser.NUMBER_NODE,
+																Value: 123,
+															},
+														},
 													},
 													{
 														Name:  nil,
-														Type:  parser.OPERATOR_NODE,
-														Value: "=",
-													},
-													{
-														Name:  "right",
-														Type:  parser.NUMBER_NODE,
-														Value: 123,
+														Type:  parser.EOS_NODE,
+														Value: nil,
 													},
 												},
 											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Name:  nil,
+						Type:  parser.EOF_NODE,
+						Value: nil,
+					},
+				},
+			},
+		},
+		{
+			input: []parser.Token{
+				&parser.BasicToken{TypeVal: parser.ROUTE, LiteralVal: "route"},
+				&parser.BasicToken{TypeVal: parser.LBRACKET, LiteralVal: "["},
+				&parser.BasicToken{TypeVal: parser.IDENT, LiteralVal: "NEW_ROUTE"},
+				&parser.BasicToken{TypeVal: parser.RBRACKET, LiteralVal: "]"},
+				&parser.BasicToken{TypeVal: parser.LBRACE, LiteralVal: "{"},
+				&parser.BasicToken{TypeVal: parser.IDENT, LiteralVal: "x"},
+				&parser.BasicToken{TypeVal: parser.ASSIGN, LiteralVal: "="},
+				&parser.NumberLiteral{Value: 123},
+				&parser.BasicToken{TypeVal: parser.SEMICOLON, LiteralVal: ";"},
+				&parser.BasicToken{TypeVal: parser.RBRACE, LiteralVal: "}"},
+				&parser.EOFToken{},
+			},
+			expected: &parser.ASTNode{
+				Name: nil,
+				Type: parser.ROOT_NODE,
+				Value: []*parser.ASTNode{
+					{
+						Name: nil,
+						Type: parser.TOP_LEVEL_STATEMENT_NODE,
+						Value: []*parser.ASTNode{
+							{
+								Name: "NEW_ROUTE",
+								Type: parser.ROUTE_NODE,
+								Value: []*parser.ASTNode{
+									{
+										Name: nil,
+										Type: parser.BLOCK_NODE,
+										Value: []*parser.ASTNode{
 											{
-												Name:  nil,
-												Type:  parser.EOS_NODE,
-												Value: nil,
+												Name: nil,
+												Type: parser.STATEMENT_NODE,
+												Value: []*parser.ASTNode{
+													{
+														Name: nil,
+														Type: parser.ASSIGNMENT_NODE,
+														Value: []*parser.ASTNode{
+															{
+																Name:  "left",
+																Type:  parser.IDENTIFIER_NODE,
+																Value: "x",
+															},
+															{
+																Name:  nil,
+																Type:  parser.OPERATOR_NODE,
+																Value: "=",
+															},
+															{
+																Name:  "right",
+																Type:  parser.NUMBER_NODE,
+																Value: 123,
+															},
+														},
+													},
+													{
+														Name:  nil,
+														Type:  parser.EOS_NODE,
+														Value: nil,
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Name:  nil,
+						Type:  parser.EOF_NODE,
+						Value: nil,
+					},
+				},
+			},
+		},
+		{
+			input: []parser.Token{
+				&parser.BasicToken{TypeVal: parser.ROUTE, LiteralVal: "route"},
+				&parser.BasicToken{TypeVal: parser.LBRACKET, LiteralVal: "["},
+				&parser.NumberLiteral{Value: 1},
+				&parser.BasicToken{TypeVal: parser.RBRACKET, LiteralVal: "]"},
+				&parser.BasicToken{TypeVal: parser.LBRACE, LiteralVal: "{"},
+				&parser.BasicToken{TypeVal: parser.IDENT, LiteralVal: "x"},
+				&parser.BasicToken{TypeVal: parser.ASSIGN, LiteralVal: "="},
+				&parser.NumberLiteral{Value: 123},
+				&parser.BasicToken{TypeVal: parser.SEMICOLON, LiteralVal: ";"},
+				&parser.BasicToken{TypeVal: parser.IDENT, LiteralVal: "y"},
+				&parser.BasicToken{TypeVal: parser.ASSIGN, LiteralVal: "="},
+				&parser.NumberLiteral{Value: 456},
+				&parser.BasicToken{TypeVal: parser.SEMICOLON, LiteralVal: ";"},
+				&parser.CoreVariableToken{TypeVal: parser.CORE_VARIABLE, VariableType: "var", VariableName: "x"},
+				&parser.BasicToken{TypeVal: parser.ASSIGN, LiteralVal: "="},
+				&parser.CoreVariableToken{TypeVal: parser.CORE_VARIABLE, VariableType: "avp", VariableName: "y"},
+				&parser.BasicToken{TypeVal: parser.SEMICOLON, LiteralVal: ";"},
+				&parser.BasicToken{TypeVal: parser.RBRACE, LiteralVal: "}"},
+				&parser.EOFToken{},
+			},
+			expected: &parser.ASTNode{
+				Name: nil,
+				Type: parser.ROOT_NODE,
+				Value: []*parser.ASTNode{
+					{
+						Name: nil,
+						Type: parser.TOP_LEVEL_STATEMENT_NODE,
+						Value: []*parser.ASTNode{
+							{
+								Name: "1",
+								Type: parser.ROUTE_NODE,
+								Value: []*parser.ASTNode{
+									{
+										Name: nil,
+										Type: parser.BLOCK_NODE,
+										Value: []*parser.ASTNode{
+											{
+												Name: nil,
+												Type: parser.STATEMENT_NODE,
+												Value: []*parser.ASTNode{
+													{
+														Name: nil,
+														Type: parser.ASSIGNMENT_NODE,
+														Value: []*parser.ASTNode{
+															{Name: "left", Type: parser.IDENTIFIER_NODE, Value: "x"},
+															{Name: nil, Type: parser.OPERATOR_NODE, Value: "="},
+															{Name: "right", Type: parser.NUMBER_NODE, Value: 123},
+														},
+													},
+													{Name: nil, Type: parser.EOS_NODE, Value: nil},
+												},
+											},
+											{
+												Name: nil,
+												Type: parser.STATEMENT_NODE,
+												Value: []*parser.ASTNode{
+													{
+														Name: nil,
+														Type: parser.ASSIGNMENT_NODE,
+														Value: []*parser.ASTNode{
+															{Name: "left", Type: parser.IDENTIFIER_NODE, Value: "y"},
+															{Name: nil, Type: parser.OPERATOR_NODE, Value: "="},
+															{Name: "right", Type: parser.NUMBER_NODE, Value: 456},
+														},
+													},
+													{Name: nil, Type: parser.EOS_NODE, Value: nil},
+												},
+											},
+											{
+												Name: nil,
+												Type: parser.STATEMENT_NODE,
+												Value: []*parser.ASTNode{
+													{
+														Name: nil,
+														Type: parser.ASSIGNMENT_NODE,
+														Value: []*parser.ASTNode{
+															{
+																Name: "left",
+																Type: parser.CORE_VAR_VAR_NODE,
+																Value: []*parser.ASTNode{{
+																	Name:  nil,
+																	Type:  parser.IDENTIFIER_NODE,
+																	Value: "x",
+																}},
+															},
+															{Name: nil, Type: parser.OPERATOR_NODE, Value: "="},
+															{
+																Name: "right",
+																Type: parser.CORE_VAR_AVP_NODE,
+																Value: []*parser.ASTNode{{
+																	Name:  nil,
+																	Type:  parser.IDENTIFIER_NODE,
+																	Value: "y",
+																}},
+															},
+														},
+													},
+													{Name: nil, Type: parser.EOS_NODE, Value: nil},
+												},
 											},
 										},
 									},

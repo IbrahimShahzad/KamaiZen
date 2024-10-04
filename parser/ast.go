@@ -23,8 +23,20 @@ const (
 	STATEMENT_NODE           ASTNodeType = "Statement"
 	BLOCK_NODE               ASTNodeType = "Block"
 	TOP_LEVEL_STATEMENT_NODE ASTNodeType = "TopLevelStatement"
-	OPERATOR_NODE            ASTNodeType = "Operator"
-	FILE_STARTER_NODE        ASTNodeType = "FileStarter"
+
+	OPERATOR_NODE     ASTNodeType = "Operator"
+	FILE_STARTER_NODE ASTNodeType = "FileStarter"
+)
+
+const (
+	REQUEST_ROUTE_NODE ASTNodeType = "request_route"
+	REPLY_ROUTE_NODE   ASTNodeType = "reply_route"
+	FAILURE_ROUTE_NODE ASTNodeType = "failure_route"
+	ONREPLY_ROUTE_NODE ASTNodeType = "onreply_route"
+	BRANCH_ROUTE_NODE  ASTNodeType = "branch_route"
+	LOCAL_ROUTE_NODE   ASTNodeType = "local_route"
+	STARTUP_ROUTE_NODE ASTNodeType = "startup_route"
+	ROUTE_NODE         ASTNodeType = "route"
 )
 
 type ASTNode struct {

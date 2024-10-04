@@ -8,8 +8,10 @@ func seq(parsers ...func() *ASTNode) func() *ASTNode {
 		var nodes ASTNode
 		for _, parser := range parsers {
 			node := parser()
-			if node == nil || node == EmptyNode || node.Type == ERROR_NODE {
+			if node == nil || node.Type == ERROR_NODE {
 				return nil
+			} else if node == EmptyNode {
+				continue
 			}
 			nodes.addChild(node)
 		}
@@ -33,7 +35,7 @@ func choice(parsers ...func() *ASTNode) func() *ASTNode {
 func optional(parser func() *ASTNode) func() *ASTNode {
 	return func() *ASTNode {
 		node := parser()
-		if node == nil {
+		if node == nil || node.Type == ERROR_NODE {
 			return EmptyNode
 		}
 		return node

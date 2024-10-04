@@ -140,6 +140,19 @@ func TestLexer_Tokenise(t *testing.T) {
 			},
 		},
 		{
+			input: `request_route { x = 123; }`,
+			expected: []parser.Token{
+				&parser.BasicToken{TypeVal: parser.ROUTE, LiteralVal: "request_route"},
+				&parser.BasicToken{TypeVal: parser.LBRACE, LiteralVal: "{"},
+				&parser.BasicToken{TypeVal: parser.IDENT, LiteralVal: "x"},
+				&parser.BasicToken{TypeVal: parser.ASSIGN, LiteralVal: "="},
+				&parser.NumberLiteral{Value: 123},
+				&parser.BasicToken{TypeVal: parser.SEMICOLON, LiteralVal: ";"},
+				&parser.BasicToken{TypeVal: parser.RBRACE, LiteralVal: "}"},
+				&parser.EOFToken{},
+			},
+		},
+		{
 			input: `if ($var(x) == $avp(y)){ return $var(z); }`,
 			expected: []parser.Token{
 				&parser.BasicToken{TypeVal: parser.KEYWORD, LiteralVal: "if"},
