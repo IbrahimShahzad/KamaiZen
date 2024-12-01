@@ -29,6 +29,7 @@ const (
 
 	OPERATOR_NODE     ASTNodeType = "Operator"
 	FILE_STARTER_NODE ASTNodeType = "FileStarter"
+	INCLUDE_FILE_NODE ASTNodeType = "include"
 )
 
 const (

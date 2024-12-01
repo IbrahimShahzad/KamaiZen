@@ -1,9 +1,11 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"reflect"
+	"regexp"
 	"strconv"
 )
 
@@ -51,17 +53,17 @@ func (p *Parser) rollBackWithError(msg string) {
 	p.rollbackTransaction()
 }
 
-func (p *Parser) withTransaction(parser func() *ASTNode) *ASTNode {
+func (p *Parser) withTransaction(parser func() *ASTNode, funcName string) *ASTNode {
 	p.startTransaction()
 
 	node := parser()
 	if node == nil || node.Type == EMPTY_NODE {
 		p.rollbackTransaction()
-		return errorNode("Transaction Failed")
+		return errorNode(fmt.Sprintf("[%s]: Transaction Failed!", funcName))
 	}
 
 	if node.Type == ERROR_NODE {
-		p.rollBackWithError(node.Value.(string))
+		p.rollBackWithError(fmt.Sprintf("[%s]: Transaction Failed: %s", funcName, node.Value.(string)))
 		return node
 	}
 
@@ -72,6 +74,25 @@ func (p *Parser) withTransaction(parser func() *ASTNode) *ASTNode {
 func (p *Parser) updateASTLevel() {
 	p.Root.level = 0
 	p.updateASTLevelRecursive(p.Root)
+}
+
+func UpdateASTLevel(node *ASTNode) {
+	node.level = 0
+	updateASTLevelRecursive(node)
+}
+
+func updateASTLevelRecursive(node *ASTNode) {
+	if node.Value == nil {
+		return
+	}
+	if _, ok := node.Value.([]*ASTNode); !ok {
+		// it is a leaf node
+		return
+	}
+	for _, child := range node.Value.([]*ASTNode) {
+		child.level = node.level + 1
+		updateASTLevelRecursive(child)
+	}
 }
 
 func (p *Parser) updateASTLevelRecursive(node *ASTNode) {
@@ -167,7 +188,7 @@ func (p *Parser) parseBlock() *ASTNode {
 			return errorNode("Expected closing brace but got " + p.tokens[p.pos].Literal().(string))
 		}
 		return node
-	})
+	}, "parseBlock")
 }
 
 func (p *Parser) parseFileStarter() *ASTNode {
@@ -184,6 +205,7 @@ func (p *Parser) parseFileStarter() *ASTNode {
 		if !ok {
 			return errorNode("Invalid file starter " + p.tokens[p.pos].Literal().(string))
 		}
+		fmt.Println("Starter: ", starter)
 
 		switch starter {
 		case "SER":
@@ -204,7 +226,7 @@ func (p *Parser) parseFileStarter() *ASTNode {
 			return errorNode("Invalid file starter " + starter)
 		}
 
-	})
+	}, "parseFileStarter")
 }
 
 func (p *Parser) parseRequestRouteKeyword() *ASTNode {
@@ -245,7 +267,7 @@ func (p *Parser) parseRequestRouteKeyword() *ASTNode {
 			Type:  route_type,
 			Value: nil,
 		}
-	})
+	}, "parseRequestRouteKeyword")
 }
 
 func (p *Parser) parseRequestRouteName() *ASTNode {
@@ -273,7 +295,7 @@ func (p *Parser) parseRequestRouteName() *ASTNode {
 		}
 
 		return name
-	})
+	}, "parseRequestRouteName")
 }
 
 func (p *Parser) parseRequestRoute() *ASTNode {
@@ -320,12 +342,81 @@ func (p *Parser) parseRequestRoute() *ASTNode {
 	return r
 }
 
+func validateFilePath(filePath string) error {
+	// check if its a valid file path
+	// example /path/to/file.extention
+	if filePath == "" {
+		return errors.New("file path is empty")
+	}
+
+	// Regular expression to validate file path
+	// This regex checks for a valid file path with optional file extension
+	var validPath = regexp.MustCompile(`^(/[^/ ]*)+/?([^/ ]+)?$`)
+
+	// Validate the file path
+	if !validPath.MatchString(filePath) {
+		return errors.New("invalid file path")
+	}
+	return nil
+}
+
+func (p *Parser) parseIncludeFile() *ASTNode {
+
+	if p.peek().Type() == EOF {
+		return errorNode("Expected include file but got EOF")
+	}
+
+	return p.withTransaction(func() *ASTNode {
+		if !p.consume(PREPROC) {
+			return errorNode(fmt.Sprintf("Expected include file but got %v", p.peek().Literal()))
+		}
+
+		node := &ASTNode{
+			Name:  p.peekPrev().Literal().(string),
+			Type:  INCLUDE_FILE_NODE,
+			Value: nil,
+		}
+
+		filePath := p.parseString()
+		if filePath == nil || filePath.Type == ERROR_NODE {
+			return errorNode("Error parsing include file")
+		}
+
+		node.addChild(filePath)
+
+		return node
+	}, "parseIncludeFile")
+
+}
+
 func (p *Parser) parseTopLevelStatement() *ASTNode {
 	if p.peek().Type() == EOF {
 		return errorNode("Expected top level statement but got EOF")
 	}
+	//  $.file_starter,
+	//  $.include_file,
+	//  $.import_file,
+	//  $.call_expression,
+	//  $.routing_block,
+	//  $.top_level_assignment_expression,
+	//  $.loadmodule,
+	//  $.loadmodulex,
+	//  $.loadpath,
+	//  $.modparam,
+	//  $.modparamx,
+	//  $.preproc_def,
+	//  $.preproc_trydef,
+	//  $.preproc_ifdef,
+	//  $.preproc_ifndef,
+	//  $.preproc_redef,
+	//  $.preproc_subst,
+	//  $.preproc_substdefs,
+	//  $.preproc_substdef,
+	//  $.top_level_statement,
+	//  $.comment,
 	child := choice(
 		p.parseFileStarter,
+		p.parseIncludeFile, // This is only with preproc #!include "file"
 		p.parseTopLevelAssignment,
 		p.parseRequestRoute,
 		// p.parseBlock,
@@ -508,7 +599,7 @@ func (p *Parser) commaSeparatedExpressions() *ASTNode {
 		node.addChild(left)
 		node.addChild(right)
 		return node
-	})
+	}, "commaSeparatedExpressions")
 }
 
 func (p *Parser) parseParenthesizedExpression() *ASTNode {
@@ -532,7 +623,7 @@ func (p *Parser) parseParenthesizedExpression() *ASTNode {
 		}
 
 		return node
-	})
+	}, "parseParenthesizedExpression")
 }
 
 func (p *Parser) parseIfStatement() *ASTNode {
@@ -562,7 +653,7 @@ func (p *Parser) parseIfStatement() *ASTNode {
 			node.addChild(elseBlock)
 		}
 		return &node
-	})
+	}, "parseIfStatement")
 }
 
 func (p *Parser) parseElseBlock() *ASTNode {
@@ -576,7 +667,7 @@ func (p *Parser) parseElseBlock() *ASTNode {
 			return errorNode("Error parsing else block")
 		}
 		return block
-	})
+	}, "parseElseBlock")
 }
 
 func (p *Parser) parseAssignmentStatement() *ASTNode {
@@ -705,7 +796,7 @@ func (p *Parser) ParseCoreVariable() *ASTNode {
 		}
 		node.addChild(child)
 		return node
-	})
+	}, "ParseCoreVariable")
 }
 
 func (p *Parser) assignment_right_side() *ASTNode {
@@ -744,7 +835,7 @@ func (p *Parser) parseIdentifier() *ASTNode {
 			Type:  IDENTIFIER_NODE,
 			Value: value,
 		}
-	})
+	}, "parseIdentifier")
 }
 
 func (p *Parser) parseKeyword() *ASTNode {
@@ -765,7 +856,7 @@ func (p *Parser) parseKeyword() *ASTNode {
 			Type:  KEYWORD_NODE,
 			Value: value,
 		}
-	})
+	}, "parseKeyword")
 }
 
 func (p *Parser) parseNumber() *ASTNode {
@@ -787,7 +878,7 @@ func (p *Parser) parseNumber() *ASTNode {
 			Type:  NUMBER_NODE,
 			Value: value,
 		}
-	})
+	}, "parseNumber")
 }
 
 func (p *Parser) parseString() *ASTNode {
@@ -810,7 +901,7 @@ func (p *Parser) parseString() *ASTNode {
 			Type:  STRING_NODE,
 			Value: value,
 		}
-	})
+	}, "parseString")
 }
 
 func (p *Parser) parseAssignOperator() *ASTNode {
@@ -826,7 +917,7 @@ func (p *Parser) parseAssignOperator() *ASTNode {
 			Type:  OPERATOR_NODE,
 			Value: "=",
 		}
-	})
+	}, "parseAssignOperator")
 }
 
 func (p *Parser) parseOperator() *ASTNode {
