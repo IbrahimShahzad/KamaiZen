@@ -7,6 +7,19 @@ import (
 	"strconv"
 )
 
+const (
+	_PREC_DEFAULT = iota
+	_PREC_ADD_SUB
+	_PREC_MUL_DIV
+	_PREC_OR
+	_PREC_AND
+	_PREC_BIN_OR
+	_PREC_BIN_XOR
+	_PREC_BIN_AND
+	_PREC_EQ
+	_PREC_GT_LT
+)
+
 // TODO: use logging instead of fmt.Println
 type Parser struct {
 	tokens           []Token
@@ -22,6 +35,7 @@ func (p *Parser) startTransaction() {
 func (p *Parser) commitTransaction() {
 	if len(p.tranasctionStack) > 0 {
 		p.tranasctionStack = p.tranasctionStack[:len(p.tranasctionStack)-1] // pop
+		// position should already be advanced by consumes
 	}
 }
 
@@ -96,6 +110,13 @@ func (p *Parser) peekNext() Token {
 	return p.tokens[p.pos+1]
 }
 
+func (p *Parser) peekPrev() Token {
+	if p.pos-1 < 0 {
+		return nil
+	}
+	return p.tokens[p.pos-1]
+}
+
 func (p *Parser) next() Token {
 	if p.pos >= len(p.tokens) {
 		return nil
@@ -120,14 +141,7 @@ func (p *Parser) consumeTokenWithLiteral(t TokenType, literal string) bool {
 	return false
 }
 
-func (p *Parser) unConsume() {
-	if p.pos > 0 {
-		p.pos--
-	}
-}
-
 func (p *Parser) parseEOS() *ASTNode {
-	// fmt.Println("Parsing EOS")
 	if p.peek().Type() == EOF {
 		return errorNode("Expected semicolon but got EOF")
 	}
@@ -138,38 +152,39 @@ func (p *Parser) parseEOS() *ASTNode {
 }
 
 func (p *Parser) parseBlock() *ASTNode {
-	fmt.Println("Parsing block ", p.peek().Type(), p.peek().Literal())
 	if p.peek().Type() == EOF {
 		return errorNode("Expected block but got EOF")
 	}
-	if p.consume(LBRACE) {
+
+	return p.withTransaction(func() *ASTNode {
+		if !p.consume(LBRACE) {
+			return errorNode("Expected opening brace but got " + p.tokens[p.pos].Literal().(string))
+		}
 		node := repeat(p.parseStatement)()
-		fmt.Println("Block items: ", node)
 		node.Type = BLOCK_NODE
-		if node.Type == ERROR_NODE {
-			p.unConsume()
-			return errorNode("Error parsing block")
+
+		if !p.consume(RBRACE) {
+			return errorNode("Expected closing brace but got " + p.tokens[p.pos].Literal().(string))
 		}
-		if p.consume(RBRACE) {
-			return node
-		}
-		p.unConsume()
-		return errorNode("Expected closing brace but got " + p.tokens[p.pos].Literal().(string))
-	}
-	return errorNode("Expected opening brace but got " + p.tokens[p.pos].Literal().(string))
+		return node
+	})
 }
 
 func (p *Parser) parseFileStarter() *ASTNode {
-	// fmt.Println("Parsing file starter")
 	if p.peek().Type() == EOF {
 		return errorNode("Expected file starter but got EOF")
 	}
-	if p.consume(PREPROC) {
-		starter, ok := p.tokens[p.pos-1].Literal().(string)
+
+	return p.withTransaction(func() *ASTNode {
+		if !p.consume(PREPROC) {
+			return errorNode(fmt.Sprintf("Expected file starter but got %v", p.tokens[p.pos].Literal()))
+		}
+
+		starter, ok := p.peekPrev().Literal().(string)
 		if !ok {
-			p.unConsume()
 			return errorNode("Invalid file starter " + p.tokens[p.pos].Literal().(string))
 		}
+
 		switch starter {
 		case "SER":
 			fallthrough
@@ -186,20 +201,22 @@ func (p *Parser) parseFileStarter() *ASTNode {
 				Value: starter,
 			}
 		default:
-			p.unConsume()
 			return errorNode("Invalid file starter " + starter)
 		}
 
-	}
-	return errorNode("Expected file starter but got " + p.tokens[p.pos].Literal().(string))
+	})
 }
 
 func (p *Parser) parseRequestRouteKeyword() *ASTNode {
-	// fmt.Println("Parsing request route keyword")
 	if p.peek().Type() == EOF {
 		return errorNode("Expected request_route keyword but got EOF")
 	}
-	if p.consume(ROUTE) {
+
+	return p.withTransaction(func() *ASTNode {
+		if !p.consume(ROUTE) {
+			return errorNode(fmt.Sprintf("Expected request_route keyword but got %v", p.tokens[p.pos].Literal()))
+		}
+
 		val := p.tokens[p.pos-1].Literal().(string) // consumed token
 		var route_type ASTNodeType
 		switch val {
@@ -220,46 +237,48 @@ func (p *Parser) parseRequestRouteKeyword() *ASTNode {
 		case "route":
 			route_type = ROUTE_NODE
 		default:
-			p.unConsume()
-			errorNode("Invalid route type " + val)
+			return errorNode("Invalid route type " + val)
 		}
+
 		return &ASTNode{
 			Name:  nil,
 			Type:  route_type,
 			Value: nil,
 		}
-
-	}
-	return errorNode("Expected request_route keyword but got " + p.tokens[p.pos].Literal().(string))
+	})
 }
 
 func (p *Parser) parseRequestRouteName() *ASTNode {
-	// fmt.Println("Parsing request route name")
 	if p.peek().Type() == EOF {
 		return errorNode("Expected request_route name but got EOF")
 	}
-	// name should be  '[', identifier or number or string, ']'
-	if p.consume(LBRACKET) {
+
+	return p.withTransaction(func() *ASTNode {
+		// name should be  '[', identifier or number or string, ']'
+		if !p.consume(LBRACKET) {
+			return errorNode("Expected opening bracket but got " + p.tokens[p.pos].Literal().(string))
+		}
 		name := choice(
 			p.parseIdentifier,
 			p.parseNumber,
 			p.parseString,
 		)()
+
 		if name == nil {
 			return errorNode("Error parsing request_route name")
 		}
-		if p.consume(RBRACKET) {
-			return name
+
+		if !p.consume(RBRACKET) {
+			return errorNode("Expected closing bracket but got " + p.tokens[p.pos].Literal().(string))
 		}
-		return errorNode("Expected closing bracket but got " + p.tokens[p.pos].Literal().(string))
-	}
-	return errorNode("Expected opening bracket but got " + p.tokens[p.pos].Literal().(string))
+
+		return name
+	})
 }
 
 func (p *Parser) parseRequestRoute() *ASTNode {
 	// the format is as follows
 	// request_route [optional_name] Block
-	fmt.Println("Parsing request route", p.peek().Type(), p.peek().Literal())
 	if p.peek().Type() == EOF {
 		return errorNode("Expected request_route but got EOF")
 	}
@@ -290,7 +309,6 @@ func (p *Parser) parseRequestRoute() *ASTNode {
 		r.addChild(errorNode("Route name is required"))
 	}
 
-	fmt.Println("Request route node", r, "parsing block")
 	block := p.parseBlock()
 
 	if block == nil || block.Type == ERROR_NODE {
@@ -303,7 +321,6 @@ func (p *Parser) parseRequestRoute() *ASTNode {
 }
 
 func (p *Parser) parseTopLevelStatement() *ASTNode {
-	fmt.Println("Parsing top level statement", p.peek().Type(), p.peek().Literal())
 	if p.peek().Type() == EOF {
 		return errorNode("Expected top level statement but got EOF")
 	}
@@ -326,7 +343,7 @@ func (p *Parser) parseTopLevelStatement() *ASTNode {
 	}
 	err := node.addChild(child)
 	if err != nil {
-		fmt.Println("Error adding children to statement node")
+		log.Println("Error adding children to statement node")
 	}
 	return node
 }
@@ -334,28 +351,28 @@ func (p *Parser) parseTopLevelStatement() *ASTNode {
 func getPrecedence(op TokenType) int {
 	switch op {
 	case ADD_OP, SUB_OP:
-		return 1
+		return _PREC_ADD_SUB
 	case MUL_OP, DIV_OP:
-		return 2
+		return _PREC_MUL_DIV
 	case OR_OP:
-		return 3
+		return _PREC_OR
 	case AND_OP:
-		return 4
+		return _PREC_AND
 	case BIN_OR_OP:
-		return 5
+		return _PREC_BIN_OR
 	case BIN_XOR_OP:
-		return 6
+		return _PREC_BIN_XOR
 	case BIN_AND_OP:
-		return 7
+		return _PREC_BIN_AND
 	case EQ_OP, REGEX_OP, NE_OP:
-		return 8
+		return _PREC_EQ
 	case GT_OP, GE_OP, LT_OP, LE_OP:
-		return 9
+		return _PREC_GT_LT
 	// TODO: check if these operators are required
 	// case OPERATORS.BIN_LSHIFT, OPERATORS.BIN_RSHIFT:
 	// 	return 10
 	default:
-		return 0
+		return _PREC_DEFAULT
 	}
 }
 
@@ -393,40 +410,31 @@ func (p *Parser) parseBinaryExpression() *ASTNode {
 	if IsBinaryOperator(p.peekNext()) {
 		left := choice(
 			p.parseNonBinaryExpression,
-		)()
+		)().withName("left")
 		if left == nil {
 			return errorNode("Error parsing left expression")
 		}
-		left.Name = "left"
 		node.addChild(left)
-		fmt.Println("Left node", left)
 
-		op := p.parseBinaryOperator(getPrecedence(p.peekNext().Type()))
+		op := p.parseBinaryOperator(getPrecedence(p.peekNext().Type())).withName("operator")
 		if op == nil {
 			return errorNode("Error parsing operator")
 		}
-		op.Name = "operator"
 		node.addChild(op)
-		fmt.Println("Operator node", op)
 
-		right := p.parseNonBinaryExpression()
+		right := p.parseNonBinaryExpression().withName("right")
 		if right == nil {
 			return errorNode("Error parsing right expression")
 		}
-		right.Name = "right"
 		node.addChild(right)
-		fmt.Println("Right node", right)
 
 		return node
 
 	}
-
-	fmt.Println("[B1] Error parsing binary expression")
 	return errorNode("Expected binary expression but got " + p.tokens[p.pos].Literal().(string))
 }
 
 func (p *Parser) parseExpression() *ASTNode {
-	// fmt.Println("Parsing expression")
 	if p.peek().Type() == EOF {
 		return errorNode("Expected expression but got EOF")
 	}
@@ -438,7 +446,6 @@ func (p *Parser) parseExpression() *ASTNode {
 }
 
 func (p *Parser) parseNonBinaryExpression() *ASTNode {
-	fmt.Println("Parsing non binary expression", p.peek().Type(), p.peek().Literal())
 	if p.peek().Type() == EOF {
 		return errorNode("Expected non binary expression but got EOF")
 	}
@@ -469,109 +476,107 @@ func (p *Parser) parseNonBinaryExpression() *ASTNode {
 }
 
 func (p *Parser) commaSeparatedExpressions() *ASTNode {
-	// fmt.Println("Parsing comma separated expressions")
 	if p.peek().Type() == EOF {
 		return errorNode("Expected comma separated expressions but got EOF")
 	}
-	node := &ASTNode{
-		Name:  nil,
-		Type:  COMMA_SEPARATED_EXPR_NODE,
-		Value: nil,
-	}
-	left := p.parseExpression()
-	left.Name = "left"
-	if left == nil {
-		return errorNode("Error parsing expression")
-	}
-	if p.consume(COMMA) {
+	return p.withTransaction(func() *ASTNode {
+		node := &ASTNode{
+			Name:  nil,
+			Type:  COMMA_SEPARATED_EXPR_NODE,
+			Value: nil,
+		}
+		left := p.parseExpression().withName("left")
+
+		if left == nil {
+			return errorNode("Error parsing expression")
+		}
+
+		if !p.consume(COMMA) {
+			return errorNode(fmt.Sprintf("Expected comma but got %v", p.tokens[p.pos].Literal()))
+		}
+
 		// right is a choice between expression and comma separated expressions
 		right := choice(
 			p.parseExpression,
 			p.commaSeparatedExpressions,
-		)()
+		)().withName("right")
+
 		if right == nil {
 			return errorNode("Error parsing comma separated expressions")
 		}
-		right.Name = "right"
 
 		node.addChild(left)
 		node.addChild(right)
 		return node
-	}
-	// return error
-	return errorNode("Expected comma but got " + p.tokens[p.pos].Literal().(string))
+	})
 }
 
 func (p *Parser) parseParenthesizedExpression() *ASTNode {
 	if p.peek().Type() == EOF {
 		return errorNode("Expected parenthesized expression but got EOF")
 	}
-	if p.consume(LPAREN) {
+
+	return p.withTransaction(func() *ASTNode {
+		if !p.consume(LPAREN) {
+			return errorNode(fmt.Sprintf("Expected opening parenthesis but got %v", p.tokens[p.pos].Literal()))
+		}
+
 		// find the closing parenthesis and parse the expression inside
 		node := choice(
 			p.parseExpression,
 			p.commaSeparatedExpressions,
 		)()
-		if p.consume(RPAREN) {
-			return node
+
+		if !p.consume(RPAREN) {
+			return errorNode(fmt.Sprintf("Expected closing parenthesis but got %v", p.tokens[p.pos].Literal()))
 		}
-		return errorNode("Expected closing parenthesis but got " + p.tokens[p.pos].Literal().(string))
-	}
-	return errorNode("Expected opening parenthesis but got " + p.tokens[p.pos].Literal().(string))
+
+		return node
+	})
 }
 
 func (p *Parser) parseIfStatement() *ASTNode {
-	if p.peek().Type() == EOF {
-		return errorNode("Expected if statement but got EOF")
-	}
+	return p.withTransaction(func() *ASTNode {
+		if !p.consumeTokenWithLiteral(KEYWORD, "if") {
+			return errorNode("Expected if statement but got " + p.tokens[p.pos].Literal().(string))
+		}
 
-	if p.consumeTokenWithLiteral(KEYWORD, "if") {
-		node := ASTNode{
-			Name:  "if",
-			Type:  IF_NODE,
-			Value: nil,
-		}
-		condition := p.parseParenthesizedExpression()
+		node := ASTNode{Name: "if", Type: IF_NODE}
+
+		condition := p.parseParenthesizedExpression().withName("condition")
 		if condition == nil {
-			p.unConsume()
 			return errorNode("Error parsing if statement")
 		}
-		condition.Name = "condition"
 		node.addChild(condition)
-		consequence := p.parseBlock()
+
+		consequence := p.parseBlock().withName("consequence")
 		if consequence == nil {
-			p.unConsume()
 			return errorNode("Error parsing if statement")
 		}
-		consequence.Name = "consequence"
 		node.addChild(consequence)
 
 		// optionals return empty node if not found
 		elseBlock := optional(p.parseElseBlock)()
 		if elseBlock.Type != EMPTY_NODE {
 			// only add else block if it is not empty
-			elseBlock.Name = "else"
 			node.addChild(elseBlock)
 		}
 		return &node
-	}
-	return errorNode("Expected if statement but got " + p.tokens[p.pos].Literal().(string))
+	})
 }
 
 func (p *Parser) parseElseBlock() *ASTNode {
-	if p.peek().Type() == EOF {
-		return errorNode("Expected else block but got EOF")
-	}
-	if p.consumeTokenWithLiteral(KEYWORD, "else") {
-		block := p.parseBlock()
+
+	return p.withTransaction(func() *ASTNode {
+		if !p.consumeTokenWithLiteral(KEYWORD, "else") {
+			return errorNode("Expected else block but got " + p.tokens[p.pos].Literal().(string))
+		}
+		block := p.parseBlock().withName("alternative")
 		if block == nil {
-			p.unConsume()
 			return errorNode("Error parsing else block")
 		}
-		block.Name = "block"
 		return block
-	}
-	return errorNode("Expected else block but got " + p.tokens[p.pos].Literal().(string))
+	})
 }
 
 func (p *Parser) parseAssignmentStatement() *ASTNode {
@@ -643,14 +648,7 @@ func (p *Parser) parseEOF() *ASTNode {
 }
 
 func (p *Parser) parseTopLevelAssignment() *ASTNode {
-	if p.peek().Type() == EOF {
-		return errorNode("Expected identifier or core variable but got EOF")
-	}
-	return parseWithSeq(
-		ASSIGNMENT_NODE,
-		p.assingnment_left_side,
-		p.parseAssignOperator,
-		p.assignment_right_side)
+	return p.parseAssignment()
 }
 
 func (p *Parser) parseAssignment() *ASTNode {
@@ -671,20 +669,23 @@ func (p *Parser) assingnment_left_side() *ASTNode {
 	left := choice(
 		p.parseIdentifier,
 		p.ParseCoreVariable,
-	)()
+	)().withName("left")
 	if left == nil {
 		return errorNode("Expected identifier or core variable but got " + p.tokens[p.pos].Literal().(string))
 	}
-	left.Name = "left"
+
 	return left
 }
 
 func (p *Parser) ParseCoreVariable() *ASTNode {
 	if p.peek().Type() == EOF {
-		return errorNode("Expected core variable but got EOF")
+		return errorNode("Expected identifier but got EOF")
 	}
-	if p.consume(CORE_VARIABLE) {
-		coreVariableType := p.tokens[p.pos-1].(*CoreVariableToken).VariableType
+	return p.withTransaction(func() *ASTNode {
+		if !p.consume(CORE_VARIABLE) {
+			return errorNode("Expected core variable but got " + p.tokens[p.pos].Literal().(string))
+		}
+		coreVariableType := p.peekPrev().(*CoreVariableToken).VariableType
 		cn := CORE_VAR_VAR_NODE
 		switch coreVariableType {
 		case "var":
@@ -700,123 +701,132 @@ func (p *Parser) ParseCoreVariable() *ASTNode {
 		child := &ASTNode{
 			Name:  nil,
 			Type:  IDENTIFIER_NODE,
-			Value: p.tokens[p.pos-1].(*CoreVariableToken).VariableName,
+			Value: p.peekPrev().(*CoreVariableToken).VariableName,
 		}
 		node.addChild(child)
 		return node
-	}
-	return errorNode("Expected core variable but got " + p.tokens[p.pos].Literal().(string))
+	})
 }
 
 func (p *Parser) assignment_right_side() *ASTNode {
 	if p.peek().Type() == EOF {
 		return errorNode("Expected number, string or core variable but got EOF")
 	}
+
 	right := choice(
 		p.parseNumber,
 		p.parseString,
 		p.ParseCoreVariable,
-	)()
+	)().withName("right")
 	if right == nil {
 		return errorNode("Expected number, string or core variable but got " + p.tokens[p.pos].Literal().(string))
 	}
-	right.Name = "right"
 	return right
 }
 
 func (p *Parser) parseIdentifier() *ASTNode {
-	if p.tokens[p.pos].Type() == EOF {
+	if p.peek().Type() == EOF {
 		return errorNode("Expected identifier but got EOF")
 	}
 
-	if p.consume(IDENT) {
-		value, ok := p.tokens[p.pos-1].Literal().(string)
-		if !ok {
-			return errorNode("Invalid identifier " + p.tokens[p.pos].Literal().(string))
+	return p.withTransaction(func() *ASTNode {
+		if !p.consume(IDENT) {
+			return errorNode(fmt.Sprintf("Expected keyword but got  %v", p.tokens[p.pos].Literal()))
 		}
-		node := &ASTNode{
+
+		value, ok := p.peekPrev().Literal().(string)
+		if !ok {
+			return errorNode(fmt.Sprintf("Invalid identifier %v", p.peekPrev().Literal()))
+		}
+
+		return &ASTNode{
 			Name:  nil,
 			Type:  IDENTIFIER_NODE,
 			Value: value,
 		}
-		return node
-	}
-	return errorNode("Expected identifier")
+	})
 }
 
 func (p *Parser) parseKeyword() *ASTNode {
-	if p.tokens[p.pos].Type() == EOF {
-		return errorNode("Expected keyword but got EOF")
+	if p.peek().Type() == EOF {
+		return errorNode("Expected identifier but got EOF")
 	}
-	if p.consume(KEYWORD) {
-		value, ok := p.tokens[p.pos-1].Literal().(string)
-		if !ok {
-			p.unConsume()
-			return errorNode("Invalid keyword " + p.tokens[p.pos].Literal().(string))
+
+	return p.withTransaction(func() *ASTNode {
+		if !p.consume(KEYWORD) {
+			return errorNode(fmt.Sprintf("Expected keyword but got  %v", p.tokens[p.pos].Literal()))
 		}
-		node := &ASTNode{
+		value, ok := p.peekPrev().Literal().(string)
+		if !ok {
+			return errorNode(fmt.Sprintf("Invalid keyword %v", p.peekPrev().Literal()))
+		}
+		return &ASTNode{
 			Name:  nil,
 			Type:  KEYWORD_NODE,
 			Value: value,
 		}
-		return node
-	}
-	return errorNode("Expected keyword but got " + p.tokens[p.pos].Literal().(string))
+	})
 }
 
 func (p *Parser) parseNumber() *ASTNode {
-	if p.consume(INT) {
-		value, ok := p.tokens[p.pos-1].Literal().(int)
-		if !ok {
-			p.unConsume()
-			return errorNode("Invalid number " + p.tokens[p.pos].Literal().(string))
+	if p.peek().Type() == EOF {
+		return errorNode("Expected identifier but got EOF")
+	}
+	return p.withTransaction(func() *ASTNode {
+		if !p.consume(INT) {
+			return errorNode(fmt.Sprintf("Expected number but got %v", p.tokens[p.pos].Literal()))
 		}
-		node := &ASTNode{
+
+		value, ok := p.peekPrev().Literal().(int)
+		if !ok {
+			return errorNode(fmt.Sprintf("Invalid number %v", p.peekPrev().Literal()))
+		}
+
+		return &ASTNode{
 			Name:  nil,
 			Type:  NUMBER_NODE,
 			Value: value,
 		}
-		return node
-	}
-	if p.tokens[p.pos].Type() == EOF {
-		return errorNode("Expected number but got EOF")
-	}
-	return errorNode("Expected number but got " + p.tokens[p.pos].Literal().(string))
+	})
 }
 
 func (p *Parser) parseString() *ASTNode {
-	if p.consume(STRING) {
-		value, ok := p.tokens[p.pos-1].Literal().(string)
-		if !ok {
-			p.unConsume()
-			return errorNode("Invalid string " + p.tokens[p.pos].Literal().(string))
+	if p.peek().Type() == EOF {
+		return errorNode("Expected identifier but got EOF")
+	}
+	return p.withTransaction(func() *ASTNode {
+
+		if !p.consume(STRING) {
+			return errorNode("Expected string but got " + p.tokens[p.pos].Literal().(string))
 		}
-		node := &ASTNode{
+
+		value, ok := p.peekPrev().Literal().(string)
+		if !ok {
+			return errorNode(fmt.Sprintf("Invalid string %v", p.peekPrev().Literal()))
+		}
+
+		return &ASTNode{
 			Name:  nil,
 			Type:  STRING_NODE,
 			Value: value,
 		}
-		return node
-	}
-	if p.tokens[p.pos].Type() == EOF {
-		return errorNode("Expected string but got EOF")
-	}
-	return errorNode("Expected string but got " + p.tokens[p.pos].Literal().(string))
+	})
 }
 
 func (p *Parser) parseAssignOperator() *ASTNode {
-	if p.consume(ASSIGN) {
-		node := &ASTNode{
+	if p.peek().Type() == EOF {
+		return errorNode("Expected identifier but got EOF")
+	}
+	return p.withTransaction(func() *ASTNode {
+		if !p.consume(ASSIGN) {
+			return errorNode(fmt.Sprintf("Expected assignment operator but got %v", p.tokens[p.pos].Literal()))
+		}
+		return &ASTNode{
 			Name:  nil,
 			Type:  OPERATOR_NODE,
 			Value: "=",
 		}
-		return node
-	}
-	if p.tokens[p.pos].Type() == EOF {
-		return errorNode("Expected = but got EOF")
-	}
-	return errorNode("Expected assignment operator but got " + p.tokens[p.pos].Literal().(string))
+	})
 }
 
 func (p *Parser) parseOperator() *ASTNode {

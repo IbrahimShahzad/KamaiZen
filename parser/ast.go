@@ -52,6 +52,7 @@ type ASTNode struct {
 	Type  ASTNodeType
 	Value interface{}
 	level int
+	// save line and column as well ?
 	// pointer to parent node
 	Parent *ASTNode
 }
@@ -60,6 +61,13 @@ var EmptyNode = &ASTNode{Name: nil, Type: EMPTY_NODE, Value: nil}
 
 func errorNode(msg string) *ASTNode {
 	return &ASTNode{Name: "ERROR", Type: ERROR_NODE, Value: msg}
+}
+
+func (n *ASTNode) withName(name string) *ASTNode {
+	if n != nil {
+		n.Name = name
+	}
+	return n
 }
 
 func (n *ASTNode) IsLeaf() bool {
