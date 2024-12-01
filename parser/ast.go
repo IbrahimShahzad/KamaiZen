@@ -9,20 +9,23 @@ import (
 type ASTNodeType string
 
 const (
-	ASSIGNMENT_NODE          ASTNodeType = "Assignment"
-	EMPTY_NODE               ASTNodeType = "Empty"
-	ROOT_NODE                ASTNodeType = "Root"
-	STRING_NODE              ASTNodeType = "String"
-	EOF_NODE                 ASTNodeType = "EOF"
-	NUMBER_NODE              ASTNodeType = "Number"
-	IDENTIFIER_NODE          ASTNodeType = "Identifier"
-	CORE_VAR_VAR_NODE        ASTNodeType = "var"
-	CORE_VAR_AVP_NODE        ASTNodeType = "avp"
-	ERROR_NODE               ASTNodeType = "Error"
-	EOS_NODE                 ASTNodeType = "EOS"
-	STATEMENT_NODE           ASTNodeType = "Statement"
-	BLOCK_NODE               ASTNodeType = "Block"
-	TOP_LEVEL_STATEMENT_NODE ASTNodeType = "TopLevelStatement"
+	ASSIGNMENT_NODE           ASTNodeType = "Assignment"
+	EMPTY_NODE                ASTNodeType = "Empty"
+	ROOT_NODE                 ASTNodeType = "Root"
+	STRING_NODE               ASTNodeType = "String"
+	EOF_NODE                  ASTNodeType = "EOF"
+	NUMBER_NODE               ASTNodeType = "Number"
+	IDENTIFIER_NODE           ASTNodeType = "Identifier"
+	KEYWORD_NODE              ASTNodeType = "Keyword"
+	CORE_VAR_VAR_NODE         ASTNodeType = "var"
+	CORE_VAR_AVP_NODE         ASTNodeType = "avp"
+	ERROR_NODE                ASTNodeType = "Error"
+	EOS_NODE                  ASTNodeType = "EOS"
+	STATEMENT_NODE            ASTNodeType = "Statement"
+	BLOCK_NODE                ASTNodeType = "Block"
+	IF_NODE                   ASTNodeType = "If"
+	TOP_LEVEL_STATEMENT_NODE  ASTNodeType = "TopLevelStatement"
+	COMMA_SEPARATED_EXPR_NODE ASTNodeType = "CommaSeparatedExpr"
 
 	OPERATOR_NODE     ASTNodeType = "Operator"
 	FILE_STARTER_NODE ASTNodeType = "FileStarter"
@@ -37,6 +40,11 @@ const (
 	LOCAL_ROUTE_NODE   ASTNodeType = "local_route"
 	STARTUP_ROUTE_NODE ASTNodeType = "startup_route"
 	ROUTE_NODE         ASTNodeType = "route"
+)
+
+const (
+	BINARY_EXPR_NODE ASTNodeType = "BinaryExpr"
+	UNARY_EXPR_NODE  ASTNodeType = "UnaryExpr"
 )
 
 type ASTNode struct {

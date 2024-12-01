@@ -193,14 +193,13 @@ func TestLexer_Tokenise(t *testing.T) {
 				&parser.EOFToken{},
 			},
 		},
-		// TODO: Fix this test
-		// {
-		// 	input: `!!KAMAILIO`,
-		// 	expected: []parser.Token{
-		// 		&parser.BasicToken{TypeVal: parser.PREPROC, LiteralVal: "KAMAILIO"},
-		// 		&parser.EOFToken{},
-		// 	},
-		// },
+		{
+			input: `!!KAMAILIO`,
+			expected: []parser.Token{
+				&parser.BasicToken{TypeVal: parser.PREPROC, LiteralVal: "KAMAILIO"},
+				&parser.EOFToken{},
+			},
+		},
 		{
 			input: `#!include "file.so"`,
 			expected: []parser.Token{
@@ -216,6 +215,44 @@ func TestLexer_Tokenise(t *testing.T) {
 				&parser.BasicToken{TypeVal: parser.LPAREN, LiteralVal: "("},
 				&parser.BasicToken{TypeVal: parser.STRING, LiteralVal: "file.so"},
 				&parser.BasicToken{TypeVal: parser.RPAREN, LiteralVal: ")"},
+				&parser.EOFToken{},
+			},
+		},
+		{
+			input: `#!KAMAILIO
+			request_route {
+				$var(x) = $ru;
+				if ($var(x) =~ "sip:.*@.*") {
+					exit;
+				}
+				t_reply("200", "OK");
+			}`,
+			expected: []parser.Token{
+				&parser.BasicToken{TypeVal: parser.PREPROC, LiteralVal: "KAMAILIO"},
+				&parser.BasicToken{TypeVal: parser.ROUTE, LiteralVal: "request_route"},
+				&parser.BasicToken{TypeVal: parser.LBRACE, LiteralVal: "{"},
+				&parser.CoreVariableToken{TypeVal: parser.CORE_VARIABLE, VariableType: "var", VariableName: "x"},
+				&parser.BasicToken{TypeVal: parser.ASSIGN, LiteralVal: "="},
+				&parser.CoreVariableToken{TypeVal: parser.CORE_VARIABLE, VariableType: "ru", VariableName: ""},
+				&parser.BasicToken{TypeVal: parser.SEMICOLON, LiteralVal: ";"},
+				&parser.BasicToken{TypeVal: parser.KEYWORD, LiteralVal: "if"},
+				&parser.BasicToken{TypeVal: parser.LPAREN, LiteralVal: "("},
+				&parser.CoreVariableToken{TypeVal: parser.CORE_VARIABLE, VariableType: "var", VariableName: "x"},
+				&parser.BasicToken{TypeVal: parser.REGEX_OP, LiteralVal: "=~"},
+				&parser.BasicToken{TypeVal: parser.STRING, LiteralVal: "sip:.*@.*"},
+				&parser.BasicToken{TypeVal: parser.RPAREN, LiteralVal: ")"},
+				&parser.BasicToken{TypeVal: parser.LBRACE, LiteralVal: "{"},
+				&parser.BasicToken{TypeVal: parser.KEYWORD, LiteralVal: "exit"},
+				&parser.BasicToken{TypeVal: parser.SEMICOLON, LiteralVal: ";"},
+				&parser.BasicToken{TypeVal: parser.RBRACE, LiteralVal: "}"},
+				&parser.BasicToken{TypeVal: parser.IDENT, LiteralVal: "t_reply"},
+				&parser.BasicToken{TypeVal: parser.LPAREN, LiteralVal: "("},
+				&parser.BasicToken{TypeVal: parser.STRING, LiteralVal: "200"},
+				&parser.BasicToken{TypeVal: parser.COMMA, LiteralVal: ","},
+				&parser.BasicToken{TypeVal: parser.STRING, LiteralVal: "OK"},
+				&parser.BasicToken{TypeVal: parser.RPAREN, LiteralVal: ")"},
+				&parser.BasicToken{TypeVal: parser.SEMICOLON, LiteralVal: ";"},
+				&parser.BasicToken{TypeVal: parser.RBRACE, LiteralVal: "}"},
 				&parser.EOFToken{},
 			},
 		},

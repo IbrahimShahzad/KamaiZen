@@ -22,18 +22,19 @@ const (
 	SYMBOL     byte = '$'
 	OPEN_PAREN byte = '('
 
-	EQ  byte = '='
-	NE  byte = '!'
-	LT  byte = '<'
-	GT  byte = '>'
-	AND byte = '&'
-	OR  byte = '|'
-	NOT byte = '!'
-	ADD byte = '+'
-	SUB byte = '-'
-	MUL byte = '*'
-	DIV byte = '/'
-	MOD byte = '%'
+	EQ    byte = '='
+	NE    byte = '!'
+	LT    byte = '<'
+	GT    byte = '>'
+	AND   byte = '&'
+	OR    byte = '|'
+	NOT   byte = '!'
+	ADD   byte = '+'
+	SUB   byte = '-'
+	MUL   byte = '*'
+	DIV   byte = '/'
+	MOD   byte = '%'
+	TILDE byte = '~'
 
 	HASH byte = '#'
 	BANG byte = '!'
@@ -51,6 +52,7 @@ var routes = []string{
 
 var keywords = []string{
 	"return",
+	"exit",
 	"break",
 	"case",
 	"const",
@@ -104,24 +106,28 @@ const (
 	COMMENT    TokenType = "COMMENT"
 	NEWLINE    TokenType = "NEWLINE"
 
-	// Operators
-	ASSIGN TokenType = "ASSIGN" // =
-	EQ_OP  TokenType = "EQ_OP"  // ==
-	NE_OP  TokenType = "NE_OP"  // !=
-	LT_OP  TokenType = "LT_OP"  // <
-	LE_OP  TokenType = "LE_OP"  // <=
-	GT_OP  TokenType = "GT_OP"  // >
-	GE_OP  TokenType = "GE_OP"  // >=
-	AND_OP TokenType = "AND_OP" // &&
-	OR_OP  TokenType = "OR_OP"  // ||
-	NOT_OP TokenType = "NOT_OP" // !
-	ADD_OP TokenType = "ADD_OP" // +
-	SUB_OP TokenType = "SUB_OP" // -
-	MUL_OP TokenType = "MUL_OP" // *
-	DIV_OP TokenType = "DIV_OP" // /
-	MOD_OP TokenType = "MOD_OP" // %
-	INC_OP TokenType = "INC_OP" // ++
-	DEC_OP TokenType = "DEC_OP" // --
+	// Operators -- Binary
+	ASSIGN     TokenType = "ASSIGN"     // =
+	EQ_OP      TokenType = "EQ_OP"      // ==
+	NE_OP      TokenType = "NE_OP"      // !=
+	LT_OP      TokenType = "LT_OP"      // <
+	LE_OP      TokenType = "LE_OP"      // <=
+	GT_OP      TokenType = "GT_OP"      // >
+	GE_OP      TokenType = "GE_OP"      // >=
+	AND_OP     TokenType = "AND_OP"     // &&
+	OR_OP      TokenType = "OR_OP"      // ||
+	NOT_OP     TokenType = "NOT_OP"     // !
+	ADD_OP     TokenType = "ADD_OP"     // +
+	SUB_OP     TokenType = "SUB_OP"     // -
+	MUL_OP     TokenType = "MUL_OP"     // *
+	DIV_OP     TokenType = "DIV_OP"     // /
+	MOD_OP     TokenType = "MOD_OP"     // %
+	INC_OP     TokenType = "INC_OP"     // ++
+	DEC_OP     TokenType = "DEC_OP"     // --
+	BIN_OR_OP  TokenType = "BIN_OR_OP"  // |
+	BIN_AND_OP TokenType = "BIN_AND_OP" // &
+	BIN_XOR_OP TokenType = "BIN_XOR_OP" // ^
+	REGEX_OP   TokenType = "REGEX"      // =~
 
 	// Punctuation
 	COMMA     TokenType = "COMMA"     // ,
@@ -401,6 +407,13 @@ func (l *Lexer) readOperator() Token {
 			TypeVal:    DEC_OP,
 			LiteralVal: string(SUB) + string(SUB),
 		}
+	case (EQ + TILDE):
+		l.next()
+		l.next()
+		return &BasicToken{
+			TypeVal:    REGEX_OP,
+			LiteralVal: string(EQ) + string(TILDE),
+		}
 	}
 	// for operators that are one character long
 	switch l.ch {
@@ -413,8 +426,8 @@ func (l *Lexer) readOperator() Token {
 	case NOT:
 		l.next()
 		return &BasicToken{
-			TypeVal:    NE_OP,
-			LiteralVal: string(NE),
+			TypeVal:    NOT_OP,
+			LiteralVal: string(NOT),
 		}
 	case LT:
 		l.next()
@@ -651,20 +664,20 @@ func (l *Lexer) Tokenise() []Token {
 			}
 		}
 
-		// NOTE:
-		// apply a list of functions unless one of
-		// them returns a valid token
-		// think of a clever way to do this!
+		// NOTE: apply a list of functions unless
+		// one of them returns a valid token.
+		// think of a better way to do this?
 
+		// Higher precedence for Macros
 		if !matched {
-			if token := l.readOperator(); token != nil {
+			if token := l.readMacros(); token != nil {
 				tokens = append(tokens, token)
 				matched = true
 			}
 		}
 
 		if !matched {
-			if token := l.readMacros(); token != nil {
+			if token := l.readOperator(); token != nil {
 				tokens = append(tokens, token)
 				matched = true
 			}
@@ -681,4 +694,12 @@ func (l *Lexer) Tokenise() []Token {
 	}
 
 	return append(sanitizeTokens(tokens), &EOFToken{})
+}
+
+func IsBinaryOperator(t Token) bool {
+	switch t.Type() {
+	case EQ_OP, NE_OP, LT_OP, LE_OP, GT_OP, GE_OP, AND_OP, OR_OP, NOT_OP, ADD_OP, SUB_OP, MUL_OP, DIV_OP, MOD_OP, INC_OP, DEC_OP, REGEX_OP:
+		return true
+	}
+	return false
 }

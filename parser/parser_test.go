@@ -498,6 +498,162 @@ func TestParser_Parse(t *testing.T) {
 				},
 			},
 		},
+		{
+			input: []parser.Token{
+				&parser.BasicToken{TypeVal: parser.PREPROC, LiteralVal: "KAMAILIO"},
+				&parser.BasicToken{TypeVal: parser.ROUTE, LiteralVal: "request_route"},
+				&parser.BasicToken{TypeVal: parser.LBRACE, LiteralVal: "{"},
+				&parser.BasicToken{TypeVal: parser.KEYWORD, LiteralVal: "if"},
+				&parser.BasicToken{TypeVal: parser.LPAREN, LiteralVal: "("},
+				&parser.CoreVariableToken{TypeVal: parser.CORE_VARIABLE, VariableType: "var", VariableName: "x"},
+				&parser.BasicToken{TypeVal: parser.REGEX_OP, LiteralVal: "=~"},
+				&parser.BasicToken{TypeVal: parser.STRING, LiteralVal: "sip:.*@.*"},
+				&parser.BasicToken{TypeVal: parser.RPAREN, LiteralVal: ")"},
+				&parser.BasicToken{TypeVal: parser.LBRACE, LiteralVal: "{"},
+				&parser.BasicToken{TypeVal: parser.KEYWORD, LiteralVal: "exit"},
+				&parser.BasicToken{TypeVal: parser.SEMICOLON, LiteralVal: ";"},
+				&parser.BasicToken{TypeVal: parser.RBRACE, LiteralVal: "}"},
+				&parser.BasicToken{TypeVal: parser.RBRACE, LiteralVal: "}"},
+				&parser.EOFToken{},
+			},
+			expected: &parser.ASTNode{
+				Name: nil,
+				Type: parser.ROOT_NODE,
+				Value: []*parser.ASTNode{
+					{
+						Name: nil,
+						Type: parser.TOP_LEVEL_STATEMENT_NODE,
+						Value: []*parser.ASTNode{
+							{
+								Name:  nil,
+								Type:  parser.FILE_STARTER_NODE,
+								Value: "KAMAILIO",
+							},
+						},
+					},
+					{
+						Name: nil,
+						Type: parser.TOP_LEVEL_STATEMENT_NODE,
+						Value: []*parser.ASTNode{
+							{
+								Name: nil,
+								Type: parser.REQUEST_ROUTE_NODE,
+								Value: []*parser.ASTNode{
+									{
+										Name: nil,
+										Type: parser.BLOCK_NODE,
+										Value: []*parser.ASTNode{
+											{
+												Name: "if",
+												Type: parser.STATEMENT_NODE,
+												Value: []*parser.ASTNode{
+													{
+														Name: "condition",
+														Type: parser.BINARY_EXPR_NODE,
+														Value: []*parser.ASTNode{
+															{
+																Name: "left",
+																Type: parser.CORE_VAR_VAR_NODE,
+																Value: []*parser.ASTNode{
+																	{
+																		Name:  nil,
+																		Type:  parser.IDENTIFIER_NODE,
+																		Value: "x",
+																	},
+																},
+															},
+															{
+																Name:  "operator",
+																Type:  parser.OPERATOR_NODE,
+																Value: "=~",
+															},
+															{
+																Name:  "right",
+																Type:  parser.STRING_NODE,
+																Value: "sip:.*@.*",
+															},
+														},
+													},
+													{
+														Name: "consequence",
+														Type: parser.BLOCK_NODE,
+														Value: []*parser.ASTNode{
+															{
+																Name: nil,
+																Type: parser.STATEMENT_NODE,
+																Value: []*parser.ASTNode{
+																	{
+																		Name:  nil,
+																		Type:  parser.KEYWORD_NODE,
+																		Value: "exit",
+																	},
+																	{
+																		Name:  nil,
+																		Type:  parser.EOS_NODE,
+																		Value: nil,
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Name:  nil,
+						Type:  parser.EOF_NODE,
+						Value: nil,
+					},
+				},
+			},
+		},
+		// {
+		// 	input: []parser.Token{
+		// 		&parser.BasicToken{TypeVal: parser.PREPROC, LiteralVal: "KAMAILIO"},
+		// 		&parser.BasicToken{TypeVal: parser.ROUTE, LiteralVal: "request_route"},
+		// 		&parser.BasicToken{TypeVal: parser.LBRACE, LiteralVal: "{"},
+		// 		&parser.CoreVariableToken{TypeVal: parser.CORE_VARIABLE, VariableType: "var", VariableName: "x"},
+		// 		&parser.BasicToken{TypeVal: parser.ASSIGN, LiteralVal: "="},
+		// 		&parser.CoreVariableToken{TypeVal: parser.CORE_VARIABLE, VariableType: "var", VariableName: "y"},
+		// 		&parser.BasicToken{TypeVal: parser.SEMICOLON, LiteralVal: ";"},
+		// 		&parser.BasicToken{TypeVal: parser.KEYWORD, LiteralVal: "if"},
+		// 		&parser.BasicToken{TypeVal: parser.LPAREN, LiteralVal: "("},
+		// 		&parser.CoreVariableToken{TypeVal: parser.CORE_VARIABLE, VariableType: "var", VariableName: "x"},
+		// 		&parser.BasicToken{TypeVal: parser.REGEX_OP, LiteralVal: "=~"},
+		// 		&parser.BasicToken{TypeVal: parser.STRING, LiteralVal: "sip:.*@.*"},
+		// 		&parser.BasicToken{TypeVal: parser.RPAREN, LiteralVal: ")"},
+		// 		&parser.BasicToken{TypeVal: parser.LBRACE, LiteralVal: "{"},
+		// 		&parser.BasicToken{TypeVal: parser.KEYWORD, LiteralVal: "exit"},
+		// 		&parser.BasicToken{TypeVal: parser.SEMICOLON, LiteralVal: ";"},
+		// 		&parser.BasicToken{TypeVal: parser.RBRACE, LiteralVal: "}"},
+		// 		&parser.BasicToken{TypeVal: parser.IDENT, LiteralVal: "t_reply"},
+		// 		&parser.BasicToken{TypeVal: parser.LPAREN, LiteralVal: "("},
+		// 		&parser.BasicToken{TypeVal: parser.STRING, LiteralVal: "200"},
+		// 		&parser.BasicToken{TypeVal: parser.COMMA, LiteralVal: ","},
+		// 		&parser.BasicToken{TypeVal: parser.STRING, LiteralVal: "OK"},
+		// 		&parser.BasicToken{TypeVal: parser.RPAREN, LiteralVal: ")"},
+		// 		&parser.BasicToken{TypeVal: parser.SEMICOLON, LiteralVal: ";"},
+		// 		&parser.BasicToken{TypeVal: parser.RBRACE, LiteralVal: "}"},
+		// 		&parser.EOFToken{},
+		// 	},
+		// 	expected: &parser.ASTNode{
+		// 		Name: nil,
+		// 		Type: parser.ROOT_NODE,
+		// 		Value: []*parser.ASTNode{
+		// 			{
+		// 				Name:  nil,
+		// 				Type:  parser.TOP_LEVEL_STATEMENT_NODE,
+		// 				Value: []*parser.ASTNode{},
+		// 			},
+		// 		},
+		// 	},
+		// },
+
 		// {
 		// 	input: []parser.Token{
 		// 		&parser.CoreVariableToken{TypeVal: parser.CORE_VARIABLE, VariableType: "var", VariableName: "x"},
