@@ -63,7 +63,7 @@ with [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ### Neovim
 
-- [x] [kamaizen.nvim](https://github.com/IbrahimShahzad/kamaizen.nvim)
+- [x] [KamaiZen](https://github.com/IbrahimShahzad/KamaiZen)
 
 ### Vscode
 
