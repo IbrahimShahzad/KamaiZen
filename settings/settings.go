@@ -31,5 +31,5 @@ func NewLSPSettings(kamailioSourcePath string, rootDir string, log_level int, dc
 }
 
 const RPC_VERSION = "2.0"
-const KAMAIZEN_VERSION = "0.0.1"
+const KAMAIZEN_VERSION = "0.0.4"
 const MY_NAME = "KamaiZen"
