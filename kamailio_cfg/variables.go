@@ -2,40 +2,66 @@ package kamailio_cfg
 
 import (
 	"KamaiZen/logger"
+
+	sitter "github.com/smacker/go-tree-sitter"
+)
+
+const (
+	_AVP_IDENTIFIER     = "$avp"
+	_VAR_IDENTIFIER     = "$var"
+	_DLG_VAR_IDENTIFIER = "$dlg_var"
+)
+
+const (
+	_AVP_SCOPE = "Transaction"
+	_DLG_SCOPE = "Dialog"
+	_VAR_SCOPE = "Local"
 )
 
 // keeps track of variables declared int he program
 
 // global variables
 // gloabl variables are avps
-var globalVariables map[string]Variable
+var avpVariables map[string]Variable
 
 // local variables
 var localVariables map[string]Variable
 
+var dlgVariables map[string]Variable
+
+type Position struct {
+	start sitter.Point
+	end   sitter.Point
+}
+
 // Variable struct
 type Variable struct {
-	Name       string
-	Value      string
-	Scope      string
-	Identifier string
+	name       string
+	value      string
+	scope      string
+	identifier string
+	position   Position
 }
 
 func InitialiseVariables() {
-	globalVariables = make(map[string]Variable)
+	avpVariables = make(map[string]Variable)
+	dlgVariables = make(map[string]Variable)
 	localVariables = make(map[string]Variable)
 }
 
-func AddGlobalVariable(name string, value string, identifier string) {
-	globalVariables[name] = Variable{name, value, "AVP", identifier}
+func AddAVPVariable(name string, value string, identifier string, position Position) {
+	avpVariables[name] = Variable{name, value, _AVP_SCOPE, identifier, position}
 }
 
-func AddLocalVariable(name string, value string, scope string, identifier string) {
-	localVariables[name] = Variable{name, value, scope, identifier}
+func AddLocalVariable(name string, value string, scope string, identifier string, position Position) {
+	localVariables[name] = Variable{name, value, scope, identifier, position}
 }
 
-func ExtractGlobalVariables(a *Analyzer, source_code []byte) {
-	// extract global variables
+func AddDlgVariable(name string, value string, scope string, identifier string, position Position) {
+	dlgVariables[name] = Variable{name, value, scope, identifier, position}
+}
+
+func ExtractAVPVariables(a *Analyzer, source_code []byte) {
 	q, err := NewQueryExecutor(_ASSINGMENT_QUERY, a.ast.Node, a.builder.parser.language)
 	if err != nil {
 		logger.Error("Error creating query executor: ", err)
@@ -49,28 +75,88 @@ func ExtractGlobalVariables(a *Analyzer, source_code []byte) {
 		for _, capture := range match.Captures {
 			node := capture.Node
 			variable := node.ChildByFieldName("left")
-			if variable.Type() == "pseudo_variable" || variable.Type() == "pvar_expression" {
+			if variable.Type() == PseudoVariableNodeType || variable.Type() == PseudoVariableExpressionNodeType {
 				pc := variable.NamedChild(0)
-				if pc.Type() == "pseudo_content" {
-					avp := pc.NamedChild(0)
-					if avp.Type() == "avp_var" {
-						identifier := avp.ChildByFieldName("name").Child(0).Content(source_code)
-						avp_name := "$avp(" + identifier + ")"
-						value := node.ChildByFieldName("right").Content(source_code)
-						AddGlobalVariable(avp_name, value, identifier)
+				if pc.Type() == PseudoContentNodeType {
+					v := pc.NamedChild(0)
+					switch v.Type() {
+					case AVPNodeType:
+						_id := v.ChildByFieldName("name").Child(0).Content(source_code)
+						_name := _AVP_IDENTIFIER + "(" + _id + ")"
+						_val := node.ChildByFieldName("right").Content(source_code)
+						AddAVPVariable(_name, _val, _id, Position{
+							start: node.StartPoint(),
+							end:   node.EndPoint(),
+						})
+					case VARNodeType:
+						_id := v.ChildByFieldName("name").Content(source_code)
+						_name := _VAR_IDENTIFIER + "(" + _id + ")"
+						_val := node.ChildByFieldName("right").Content(source_code)
+						_scope := _VAR_SCOPE
+						AddLocalVariable(_name, _val, _scope, _id, Position{
+							start: node.StartPoint(),
+							end:   node.EndPoint(),
+						})
+					case DlgVarNodeType:
+						_id := v.Child(2).Content(source_code)
+						_name := _DLG_VAR_IDENTIFIER + "(" + _id + ")"
+						_val := node.ChildByFieldName("right").Content(source_code)
+						_scope := _DLG_SCOPE
+						AddDlgVariable(_name, _val, _scope, _id, Position{
+							start: node.StartPoint(),
+							end:   node.EndPoint(),
+						})
+
+					default:
+						continue
 					}
+
 				}
 			}
 		}
 	}
 }
 
-func (v *Variable) GetGlobalVariableDocs() string {
-	return "## User defined AVP\n\t" + v.Identifier + "\n" +
-		"### Value\n\t```\n" + "\t" + v.Value + "\n```\n" +
-		"### Scope\n\t" + v.Scope + "\n"
+func (v *Variable) GetDocs() string {
+	if v == nil {
+		return ""
+	}
+	var header string
+	if v.scope == _AVP_SCOPE {
+		header = "## User defined AVP\n\n\t" + v.name + "\n\n"
+	} else if v.scope == _DLG_SCOPE {
+		header = "## User defined Dialog Variable\n\n\t" + v.name + "\n\n"
+	} else {
+		header = "## User defined Local Variable\n\n\t" + v.name + "\n\n"
+	}
+	return header + "### Value\n\n\t" + v.value + "\n\n" + "### Scope\n\n\t" + v.scope + "\n"
 }
 
-func GetGlobalVariables() map[string]Variable {
-	return globalVariables
+func GetAVPVariables() map[string]Variable {
+	return avpVariables
+}
+
+func GetAVPVariable(name string) Variable {
+	id := _AVP_IDENTIFIER + "(" + name + ")"
+	return avpVariables[id]
+}
+
+func GetLocalVariable(name string) Variable {
+	id := _VAR_IDENTIFIER + "(" + name + ")"
+	return localVariables[id]
+}
+
+func GetDlgVariable(name string) Variable {
+	id := _DLG_VAR_IDENTIFIER + "(" + name + ")"
+	logger.Debug("ID: ", id)
+	logger.Debug("Dlg Variables: ", dlgVariables)
+	return dlgVariables[id]
+}
+
+func GetLocalVariables() map[string]Variable {
+	return localVariables
+}
+
+func GetDlgVariables() map[string]Variable {
+	return dlgVariables
 }

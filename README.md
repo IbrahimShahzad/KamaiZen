@@ -36,7 +36,10 @@ For syntax highlighting, use [tree-sitter-kamailio-cfg](https://github.com/Ibrah
     - [ ] Unused modules
     - [ ] Unused parameters
 - [ ] Hover
-    - [x] Show documentation
+    - [x] Show documentation for functions
+    - [ ] Show documentation for routes
+    - [ ] Show documentation for avp vars
+    - [ ] Show documentation for local vars
 
 > Note: This is a work in progress, and not all features are available yet.
 

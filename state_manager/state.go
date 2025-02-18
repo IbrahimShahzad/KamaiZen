@@ -122,7 +122,7 @@ func (s *State) OpenDocument(uri lsp.DocumentURI, text string) []lsp.Diagnostic 
 	s.Analyzer.Build([]byte(text))
 	visitor := kamailio_cfg.NewDiagnosticVisitor()
 	s.Analyzer.GetAST().Accept(visitor, s.Analyzer)
-	kamailio_cfg.ExtractGlobalVariables(s.Analyzer, []byte(text))
+	kamailio_cfg.ExtractAVPVariables(s.Analyzer, []byte(text))
 	visitor.GetQueryDiagnostics(s.Analyzer.GetAST(), s.Analyzer)
 	return visitor.GetDiagnostics()
 }
@@ -143,7 +143,7 @@ func (s *State) UpdateDocument(uri lsp.DocumentURI, text string) []lsp.Diagnosti
 	s.Analyzer.Build([]byte(text))
 	visitor := kamailio_cfg.NewDiagnosticVisitor()
 	s.Analyzer.GetAST().Accept(visitor, s.Analyzer)
-	kamailio_cfg.ExtractGlobalVariables(s.Analyzer, []byte(text))
+	kamailio_cfg.ExtractAVPVariables(s.Analyzer, []byte(text))
 	visitor.GetQueryDiagnostics(s.Analyzer.GetAST(), s.Analyzer)
 	return visitor.GetDiagnostics()
 }

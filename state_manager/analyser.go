@@ -76,8 +76,36 @@ func GetNodeDocsAtPosition(uri lsp.DocumentURI, position lsp.Position, source_co
 		logger.Error("Node at position is nil")
 		return ""
 	case nodeAtPosition.Type() == kamailio_cfg.IdentifierNodeType:
-		functionName := getFunctionName(nodeAtPosition, source_code)
-		return document_manager.FindFunctionInAllModules(functionName)
+		switch nodeAtPosition.Parent().Parent().Type() {
+		case kamailio_cfg.CallExpressionNodeType:
+			functionName := getFunctionName(nodeAtPosition, source_code)
+			return document_manager.FindFunctionInAllModules(functionName)
+		case kamailio_cfg.AVPNodeType:
+			variableName := nodeAtPosition.Content(source_code)
+			logger.Debug("Variable Name: %s", variableName)
+			v := kamailio_cfg.GetAVPVariable(variableName)
+			logger.Debug("Variable: %v", v)
+			return v.GetDocs()
+		case kamailio_cfg.PseudoContentNodeType:
+			logger.Debug("Node at position: %s", nodeAtPosition.Parent().Parent().Type())
+			if nodeAtPosition.Parent().Type() == kamailio_cfg.VARNodeType {
+				variableName := nodeAtPosition.Content(source_code)
+				logger.Debug("Variable Name: %s", variableName)
+				v := kamailio_cfg.GetLocalVariable(variableName)
+				logger.Debug("Variable: %v", v)
+				return v.GetDocs()
+			}
+			if nodeAtPosition.Parent().Type() == kamailio_cfg.DlgVarNodeType {
+				variableName := nodeAtPosition.Content(source_code)
+				logger.Debug("Variable Name: %s", variableName)
+				v := kamailio_cfg.GetDlgVariable(variableName)
+				logger.Debug("Variable: %v", v)
+				return v.GetDocs()
+			}
+		default:
+			logger.Error("Unknown node type %s", nodeAtPosition.Parent().Parent().Type())
+			return ""
+		}
 	}
 	return ""
 }
@@ -190,12 +218,32 @@ func GetCompletionItems(uri lsp.DocumentURI) []lsp.CompletionItem {
 		})
 	}
 
-	variables := kamailio_cfg.GetGlobalVariables()
+	variables := kamailio_cfg.GetAVPVariables()
 	for variable, value := range variables {
 		completionItems = append(completionItems, lsp.CompletionItem{
 			Detail:        "AVP",
 			Label:         variable,
-			Documentation: value.GetGlobalVariableDocs(),
+			Documentation: value.GetDocs(),
+			Kind:          lsp.VARIABLE_COMPLETION,
+		})
+	}
+
+	localVariables := kamailio_cfg.GetLocalVariables()
+	for variable, value := range localVariables {
+		completionItems = append(completionItems, lsp.CompletionItem{
+			Detail:        "Local Variable",
+			Label:         variable,
+			Documentation: value.GetDocs(),
+			Kind:          lsp.VARIABLE_COMPLETION,
+		})
+	}
+
+	dlgVariables := kamailio_cfg.GetDlgVariables()
+	for variable, value := range dlgVariables {
+		completionItems = append(completionItems, lsp.CompletionItem{
+			Detail:        "Dialog Variable",
+			Label:         variable,
+			Documentation: value.GetDocs(),
 			Kind:          lsp.VARIABLE_COMPLETION,
 		})
 	}
