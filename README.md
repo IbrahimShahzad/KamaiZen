@@ -41,7 +41,8 @@ For syntax highlighting, use [tree-sitter-kamailio-cfg](https://github.com/Ibrah
     - [ ] Show documentation for avp vars
     - [ ] Show documentation for local vars
 
-> Note: This is a work in progress, and not all features are available yet.
+> [!Caution]
+> This is a work in progress, and not all features are available yet and might contain bugs.
 
 ## Installation
 
