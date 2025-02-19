@@ -47,7 +47,7 @@ if not parser_config['kamailio_cfg'] then
     install_info = {
       url = 'https://github.com/IbrahimShahzad/tree-sitter-kamailio-cfg',
       files = { 'src/parser.c' }, -- note that some parsers also require src/scanner.c or src/scanner.cc
-      branch = 'v0.1.2',
+      branch = 'v0.1.3',
       generate_requires_npm = false, -- if stand-alone parser without npm dependencies
       requires_generate_from_grammar = false, -- if folder contains pre-generated src/parser.c
     },

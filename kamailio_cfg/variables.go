@@ -80,6 +80,8 @@ func ExtractAVPVariables(a *Analyzer, source_code []byte) {
 				if pc.Type() == PseudoContentNodeType {
 					v := pc.NamedChild(0)
 					switch v.Type() {
+					//FIXME: update this to use the latest tree from the parser
+					// will break
 					case AVPNodeType:
 						_id := v.ChildByFieldName("name").Child(0).Content(source_code)
 						_name := _AVP_IDENTIFIER + "(" + _id + ")"
