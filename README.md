@@ -6,12 +6,14 @@ For syntax highlighting, use [tree-sitter-kamailio-cfg](https://github.com/Ibrah
 
 ## Features
 - [ ] Code completion
-    - [ ] Variables
-      - [x] Global variables (avps)
-      - [ ] Local variables (vars)
+    - [x] Variables
+      - [x] AVP 
+      - [x] Local variables (vars)
+      - [x] Dialog variables
+    - [x] Core Cookbook items
     - [x] exported functions
     - [x] Modules
-    - [x] Keywords
+    - [x] SIP Keywords
     - [ ] Parameters
 - [ ] Code navigation
   - [ ] Go to definition for routes - In progress
@@ -35,11 +37,10 @@ For syntax highlighting, use [tree-sitter-kamailio-cfg](https://github.com/Ibrah
     - [ ] Unused variables
     - [ ] Unused modules
     - [ ] Unused parameters
-- [ ] Hover
+- [x] Hover
     - [x] Show documentation for functions
-    - [ ] Show documentation for routes
-    - [ ] Show documentation for avp vars
-    - [ ] Show documentation for local vars
+    - [x] Show documentation for variables
+    - [x] Core Cookbook items
 
 > [!Caution]
 > This is a work in progress, and not all features are available yet and might contain bugs.

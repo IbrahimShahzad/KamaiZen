@@ -2,7 +2,6 @@ package kamailio_cfg
 
 import (
 	"KamaiZen/logger"
-
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
@@ -61,7 +60,7 @@ func AddDlgVariable(name string, value string, scope string, identifier string, 
 	dlgVariables[name] = Variable{name, value, scope, identifier, position}
 }
 
-func ExtractAVPVariables(a *Analyzer, source_code []byte) {
+func ExtractVariables(a *Analyzer, source_code []byte) {
 	q, err := NewQueryExecutor(_ASSINGMENT_QUERY, a.ast.Node, a.builder.parser.language)
 	if err != nil {
 		logger.Error("Error creating query executor: ", err)
@@ -75,13 +74,11 @@ func ExtractAVPVariables(a *Analyzer, source_code []byte) {
 		for _, capture := range match.Captures {
 			node := capture.Node
 			variable := node.ChildByFieldName("left")
-			if variable.Type() == PseudoVariableNodeType || variable.Type() == PseudoVariableExpressionNodeType {
+			if variable.Type() == PseudoVariableNodeType { //|| variable.Type() == PseudoVariableExpressionNodeType {
 				pc := variable.NamedChild(0)
 				if pc.Type() == PseudoContentNodeType {
 					v := pc.NamedChild(0)
 					switch v.Type() {
-					//FIXME: update this to use the latest tree from the parser
-					// will break
 					case AVPNodeType:
 						_id := v.ChildByFieldName("name").Child(0).Content(source_code)
 						_name := _AVP_IDENTIFIER + "(" + _id + ")"
@@ -91,7 +88,7 @@ func ExtractAVPVariables(a *Analyzer, source_code []byte) {
 							end:   node.EndPoint(),
 						})
 					case VARNodeType:
-						_id := v.ChildByFieldName("name").Content(source_code)
+						_id := v.ChildByFieldName("name").Child(0).Content(source_code)
 						_name := _VAR_IDENTIFIER + "(" + _id + ")"
 						_val := node.ChildByFieldName("right").Content(source_code)
 						_scope := _VAR_SCOPE
@@ -100,7 +97,7 @@ func ExtractAVPVariables(a *Analyzer, source_code []byte) {
 							end:   node.EndPoint(),
 						})
 					case DlgVarNodeType:
-						_id := v.Child(2).Content(source_code)
+						_id := v.ChildByFieldName("name").Child(0).Content(source_code)
 						_name := _DLG_VAR_IDENTIFIER + "(" + _id + ")"
 						_val := node.ChildByFieldName("right").Content(source_code)
 						_scope := _DLG_SCOPE
@@ -108,11 +105,9 @@ func ExtractAVPVariables(a *Analyzer, source_code []byte) {
 							start: node.StartPoint(),
 							end:   node.EndPoint(),
 						})
-
 					default:
 						continue
 					}
-
 				}
 			}
 		}
@@ -124,12 +119,18 @@ func (v *Variable) GetDocs() string {
 		return ""
 	}
 	var header string
-	if v.scope == _AVP_SCOPE {
+
+	// scope also determines the type of variable
+	switch v.scope {
+	case _AVP_SCOPE:
 		header = "## User defined AVP\n\n\t" + v.name + "\n\n"
-	} else if v.scope == _DLG_SCOPE {
+	case _DLG_SCOPE:
 		header = "## User defined Dialog Variable\n\n\t" + v.name + "\n\n"
-	} else {
+	case _VAR_SCOPE:
 		header = "## User defined Local Variable\n\n\t" + v.name + "\n\n"
+	default:
+		// This shouldn't happen
+		header = "## User defined Variable\n\n\t" + v.name + "\n\n"
 	}
 	return header + "### Value\n\n\t" + v.value + "\n\n" + "### Scope\n\n\t" + v.scope + "\n"
 }
@@ -150,8 +151,6 @@ func GetLocalVariable(name string) Variable {
 
 func GetDlgVariable(name string) Variable {
 	id := _DLG_VAR_IDENTIFIER + "(" + name + ")"
-	logger.Debug("ID: ", id)
-	logger.Debug("Dlg Variables: ", dlgVariables)
 	return dlgVariables[id]
 }
 

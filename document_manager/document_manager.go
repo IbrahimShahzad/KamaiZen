@@ -4,6 +4,8 @@ import (
 	"KamaiZen/logger"
 	"KamaiZen/settings"
 	"fmt"
+	"iter"
+	"maps"
 	"os"
 	"regexp"
 	"strings"
@@ -237,12 +239,8 @@ func FindFunctionInAllModules(functionName string) string {
 // from the module documentation map.
 //
 // return: A slice of strings containing the names of all available modules.
-func GetAllAvailableModules() []string {
-	var modules []string
-	for moduleName := range moduleDocumentationMapInstance.ModuleDocs {
-		modules = append(modules, moduleName)
-	}
-	return modules
+func GetAllAvailableModules() iter.Seq[string] {
+	return maps.Keys(moduleDocumentationMapInstance.ModuleDocs)
 }
 
 // GetAllFunctionsInModule retrieves all function documentation for a specific module.
