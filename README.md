@@ -1,8 +1,18 @@
 # KamaiZen
-A language server for kamailio configuration files
 
-For syntax highlighting it uses grammar based on [tree-sitter-kamailio-cfg](https://github.com/IbrahimShahzad/tree-sitter-kamailio-cfg)
+<table>
+  <tr>
+    <td><img src="docs/logo.png" alt="KamaiZen" width="200"></td>
+    <td>
+      <h3>KamaiZen</h3>
+      A language server for Kamailio configuration files.<br><br>
+    </td>
+  </tr>
+</table>
 
+> [!TIP]
+> It uses grammar based on [tree-sitter-kamailio-cfg](https://github.com/IbrahimShahzad/tree-sitter-kamailio-cfg)
+> You can use that if you just want to have syntax highlighting.
 
 ## Features
 
@@ -10,7 +20,7 @@ For syntax highlighting it uses grammar based on [tree-sitter-kamailio-cfg](http
 
 Watch a demo of KamaiZen in action:
 
-[![KamaiZen Demo](https://img.youtube.com/vi/IbnZwrY13IY/0.jpg)](https://www.youtube.com/watch?v=IbnZwrY13IY)
+[![KamaiZen Demo](https://img.youtube.com/vi/IbnZwrY13IY/hqdefault.jpg)](https://www.youtube.com/watch?v=IbnZwrY13IY)
 
 ### Code completion
 
