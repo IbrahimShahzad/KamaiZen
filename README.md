@@ -51,7 +51,9 @@ with `lazy.nvim`
     {
       'IbrahimShahzad/KamaiZen',
       dependencies = {
-        { 'IbrahimShahzad/KamaiZen', build = 'go build' },
+        { 'IbrahimShahzad/KamaiZen', 
+          branch = 'main', -- or tag = 'v0.0.5'
+          build = 'go build' },
       },
       opts = {
         settings = {
