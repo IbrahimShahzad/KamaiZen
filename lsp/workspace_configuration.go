@@ -22,6 +22,7 @@ type ConfigurationObject struct {
 	KamailioSourcePath          string `json:"kamailioSourcePath"`
 	Loglevel                    int    `json:"logLevel"`
 	EnableDeprecatedCommentHint bool   `json:"enableDeprecatedCommentHint"`
+	EnableDiagnostics           bool   `json:"enableDiagnostics"`
 }
 
 type ConfigurationItemValue struct {

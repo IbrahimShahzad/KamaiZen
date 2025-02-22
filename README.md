@@ -1,20 +1,125 @@
 # KamaiZen
 A language server for kamailio configuration files
 
-For syntax highlighting, use [tree-sitter-kamailio-cfg](https://github.com/IbrahimShahzad/tree-sitter-kamailio-cfg)
+For syntax highlighting it uses grammar based on [tree-sitter-kamailio-cfg](https://github.com/IbrahimShahzad/tree-sitter-kamailio-cfg)
 
 
 ## Features
-- [ ] Code completion
-    - [x] Variables
-      - [x] AVP 
-      - [x] Local variables (vars)
-      - [x] Dialog variables
-    - [x] Core Cookbook items
-    - [x] exported functions
-    - [x] Modules
-    - [x] SIP Keywords
-    - [ ] Parameters
+
+### Demo Video
+
+Watch a demo of KamaiZen in action:
+
+![video of KamaiZen in its own README.md](docs/video_01.mp4)
+
+### Code completion
+
+- [x] Variables
+  - [x] AVP 
+  - [x] Local variables (vars)
+  - [x] Dialog variables
+- [x] Core Cookbook items
+- [x] exported functions
+- [x] Modules
+- [x] SIP Keywords
+- [x] Parameters
+
+### Diagnostics
+- [x] Syntax Errors -- Buggy (requires re-work on the parser)
+- [x] Invalid statements
+- [x] Unreachable code
+- [x] Assignment Errors
+- [x] Function calls from non-loaded modules
+- [x] Unused variables
+- [x] Unused modules
+- [x] Unused parameters
+
+### Hover
+- [x] Show documentation for functions
+- [x] Show documentation for variables
+- [x] Core Cookbook items
+- [x] Variables
+
+> [!Caution]
+> This is a work in progress, and not all features are available yet and might contain bugs.
+
+## Installation
+
+with `lazy.nvim`
+
+```lua
+    {
+      'IbrahimShahzad/KamaiZen',
+      dependencies = {
+        { 'IbrahimShahzad/KamaiZen', build = 'go build' },
+      },
+      opts = {
+        settings = {
+          kamaizen = {
+            enableDeprecatedCommentHint = true, -- to enable hints for '#' comments
+            enableDiagnostics = true, -- to enable/disable diagnostics
+            KamailioSourcePath = vim.fn.getcwd(), -- or path/to/your/kamailio/
+            loglevel = 3,
+          },
+        },
+      },
+    }
+```
+
+
+## Integration
+
+- [x] Neovim [kamaizen.nvim](https://github.com/IbrahimShahzad/kamaizen.nvim)
+
+## How To Contrribute
+
+Contributions are welcome! To help improve KamaiZen, please follow these guidelines:
+
+
+1. Fork the Repository:
+
+Click the "Fork" button on the GitHub repository page to create your own copy.
+
+2. Clone Your Fork:
+
+```sh
+git clone https://github.com/<your-username>/KamaiZen.git
+cd KamaiZen
+```
+
+3. Create a New Branch:
+Create a branch for your feature or bugfix:
+
+```sh
+git checkout -b feature/your-feature-name
+```
+
+4. Make Your Changes:
+
+Ensure your changes follow the project's code style. Write tests if applicable.
+
+5. Commit and Push:
+
+Commit your changes with a descriptive message:
+
+```sh
+git add .
+git commit -m "Description of your change"
+git push origin feature/your-feature-name
+```
+
+6. Submit a Pull Request:
+
+Open a pull request against the main branch of the original repository. Please provide a clear description of your changes and reference any relevant issues.
+
+7. Code Reviews and Feedback:
+Your pull request will be reviewed. Be prepared to make adjustments based on feedback.
+
+For any questions or suggestions, please open an issue on GitHub.
+
+## Future Plans
+
+- [ ] scratch-parser implementation ?
 - [ ] Code navigation
   - [ ] Go to definition for routes - In progress
   - [ ] Find references for routes - In progress
@@ -29,73 +134,12 @@ For syntax highlighting, use [tree-sitter-kamailio-cfg](https://github.com/Ibrah
 - [ ] Code formatting
 - [ ] Code folding
 - [ ] Diagnostics
-    - [x] Syntax Errors -- Buggy (requires re-work on the parser)
-    - [x] Invalid statements
-    - [x] Unreachable code
-    - [x] Assignment Errors
     - [ ] Function calls from non-loaded modules
     - [ ] Unused variables
     - [ ] Unused modules
     - [ ] Unused parameters
-- [x] Hover
-    - [x] Show documentation for functions
-    - [x] Show documentation for variables
-    - [x] Core Cookbook items
+---
 
-> [!Caution]
-> This is a work in progress, and not all features are available yet and might contain bugs.
+Feel free to contribute or open issues if you have suggestions or encounter problems!
 
-## Installation
-
-### From source
-
-```bash
-git clone https://github.com/IbrahimShahzad/KamaiZen.git 
-cd KamaiZen
-go build
-cp KamaiZen /usr/local/bin
-```
-
-### To use with Neovim
-
-update your `init.lua` with the following
-
-```lua
-local client = vim.lsp.start_client {
-  cmd = { '/usr/local/bin/KamaiZen' }, -- Path to KamaiZen executable
-  name = 'KamaiZen',
-  settings = {
-    kamaizen = {
-      logLevel = 1,
-      kamailioSourcePath = '/path/to/kamailio-source', -- Path to kamailio source
-      enableDeprecatedCommentHint = false, -- to enable hints for '#' comments
-    },
-  },
-}
-
-if not client then
-  vim.notify('Failed to start LSP client', vim.log.levels.ERROR)
-  return
-end
-
-vim.api.nvim_create_autocmd('FileType', {
-  pattern = 'kamailio',
-  callback = function()
-    vim.lsp.buf_attach_client(0, client)
-  end,
-})
-```
-
-## Integration
-
-### Neovim
-
-- [x] [kamaizen.nvim](https://github.com/IbrahimShahzad/kamaizen.nvim)
-
-### Vscode
-
-> Not yet available
-
-- [ ] [vscode-kamaizen](github.com/IbrahimShahzad/vscode-kamaizen)
-
-
+---

@@ -14,8 +14,9 @@ local server = {
   autostart = true,
   settings = {
     kamaizen = {
-      enableDeprecatedCommentHint = false, -- to enable hints for '#' comments
+      enableDeprecatedCommentHint = true,
       KamailioSourcePath = vim.fn.getcwd(),
+      enableDiagnostics = true,
       loglevel = 3,
     },
   },
@@ -23,12 +24,6 @@ local server = {
     if results.offsetEncoding then
       client.offset_encoding = results.offsetEncoding
     end
-
-    -- if client.config.settings then
-    --   client.notify('workspace/didChangeConfiguration', {
-    --     settings = client.config.settings,
-    --   })
-    -- end
   end,
   on_exit = function(_, _, client_id)
     vim.schedule(function()

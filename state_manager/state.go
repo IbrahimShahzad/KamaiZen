@@ -4,6 +4,7 @@ import (
 	"KamaiZen/kamailio_cfg"
 	"KamaiZen/logger"
 	"KamaiZen/lsp"
+	"KamaiZen/settings"
 	"fmt"
 )
 
@@ -120,11 +121,15 @@ func (s *State) NotifySubsrcibers(uri lsp.DocumentURI, changes []lsp.TextDocumen
 func (s *State) OpenDocument(uri lsp.DocumentURI, text string) []lsp.Diagnostic {
 	s.Documents[uri] = text
 	s.Analyzer.Build([]byte(text))
+
 	visitor := kamailio_cfg.NewDiagnosticVisitor()
 	s.Analyzer.GetAST().Accept(visitor, s.Analyzer)
 	kamailio_cfg.ExtractVariables(s.Analyzer, []byte(text))
 	visitor.GetQueryDiagnostics(s.Analyzer.GetAST(), s.Analyzer)
-	return visitor.GetDiagnostics()
+	if settings.GlobalSettings.EnableDiagnostics {
+		return visitor.GetDiagnostics()
+	}
+	return []lsp.Diagnostic{}
 }
 
 // UpdateDocument updates the document with the given URI and text, and returns the diagnostics.
