@@ -10,7 +10,7 @@ For syntax highlighting it uses grammar based on [tree-sitter-kamailio-cfg](http
 
 Watch a demo of KamaiZen in action:
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/IbnZwrY13IY" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![KamaiZen Demo](https://img.youtube.com/vi/IbnZwrY13IY/0.jpg)](https://www.youtube.com/watch?v=IbnZwrY13IY)
 
 ### Code completion
 
