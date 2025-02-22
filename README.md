@@ -10,7 +10,10 @@ For syntax highlighting it uses grammar based on [tree-sitter-kamailio-cfg](http
 
 Watch a demo of KamaiZen in action:
 
-![video of KamaiZen in its own README.md](docs/video_01.mp4)
+<video width="640" controls>
+  <source src="docs/video_01.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 ### Code completion
 
