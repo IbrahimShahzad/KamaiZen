@@ -35,16 +35,24 @@ Watch a demo of KamaiZen in action:
 - [x] Parameters
 
 ### Diagnostics
-- [x] Syntax Errors -- Buggy (requires re-work on the parser)
+
+- [x] Syntax Errors -- Buggy (requires re-work on the parser, you can disable it by setting `enableDiagnostics` to false)
 - [x] Invalid statements
 - [x] Unreachable code
 - [x] Assignment Errors
 
 ### Hover
+
 - [x] Show documentation for functions
 - [x] Show documentation for variables
 - [x] Core Cookbook items
 - [x] Variables
+
+### Code navigation
+
+- [x] Go to definition for routes: This currently works with the routes defined in current file.
+
+---
 
 > [!Note]
 > This is a work in progress, and not all features are available yet and might contain bugs.
@@ -61,7 +69,7 @@ with `lazy.nvim`
 ```lua
 {
   'IbrahimShahzad/KamaiZen',
-  branch = 'v0.0.5', -- or branch = 'master'
+  branch = 'v0.1.0', -- or branch = 'master'
   build = 'go build',
   opts = {
     settings = {
@@ -129,9 +137,9 @@ For any questions or suggestions, please open an issue on GitHub.
 These are the features that are planned to be implemented in the future:
 
 - [ ] scratch-parser implementation ?
+- [ ] LSP for Workspace Folder instead of open file
 - [ ] Code navigation
-  - [ ] Go to definition for routes - In progress
-  - [ ] Find references for routes - In progress
+  - [ ] Find references for routes
 - [ ] Code Actions
   - [ ] Add missing modules
   - [ ] string evaluations
@@ -145,10 +153,14 @@ These are the features that are planned to be implemented in the future:
 - [ ] Code formatting
 - [ ] Code folding
 - [ ] Diagnostics
-    - [ ] Function calls from non-loaded modules
-    - [ ] Unused variables
-    - [ ] Unused modules
-    - [ ] Unused parameters
+  - [ ] Function calls from non-loaded modules
+  - [ ] Unused variables
+  - [ ] Unused modules
+  - [ ] Unused parameters
+- [ ] Other Editors
+  - [x] Neovim
+  - [ ] VSCode
+  - [ ] CLion
 
 > [!Note]
 > These are not in any particular order and might change in the future.

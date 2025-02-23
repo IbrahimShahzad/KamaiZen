@@ -180,10 +180,34 @@ func (s *State) Hover(id int, uri lsp.DocumentURI, position lsp.Position) lsp.Ho
 // Returns:
 //
 //	lsp.DefinitionProviderResponse - The definition response.
-func (s *State) Definition(id int, uri lsp.DocumentURI, position lsp.Position) lsp.DefinitionProviderResponse {
-	// TODO: Implement definition
-	// lookup the text content type from the analysis and return the definition
-	return lsp.NewDefintionProviderResponse(id, fmt.Sprintf("File: %s :: Definition at line %d, character %d", uri, position.Line, position.Character))
+func (s *State) Definition(
+	id int,
+	uri lsp.DocumentURI,
+	position lsp.Position,
+) lsp.DefinitionProviderResponse {
+	r := GetRouteDefinitionAtPosition(uri, position, []byte(s.Documents[uri]))
+	if r == nil {
+		return lsp.NewDefintionProviderResponse(
+			id,
+			"No definition found",
+			uri,
+			lsp.Position{},
+			lsp.Position{},
+		)
+	}
+	return lsp.NewDefintionProviderResponse(
+		id,
+		r.Content,
+		uri,
+		lsp.Position{
+			Line:      int(r.StartPoint.Row),
+			Character: int(r.StartPoint.Column),
+		},
+		lsp.Position{
+			Line:      int(r.EndPoint.Row),
+			Character: int(r.EndPoint.Column),
+		},
+	)
 }
 
 // TextDocumentCompletion returns the completion items for the given document URI and position.

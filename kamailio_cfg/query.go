@@ -17,6 +17,11 @@ const (
 	_ASSINGMENT_EXPRESSION_QUERY = "(statement (expression (assignment_expression))) @assignment_expression"
 )
 
+const _ROUTE_DECLARATION_QUERY = `(routing_block
+    route: (predef_route)
+    route_name: (_) @name
+    ) @definition.function`
+
 // QueryExecutor is a struct that encapsulates the execution of tree-sitter queries.
 // It holds references to the query cursor, the query itself, and the AST node being queried.
 type QueryExecutor struct {

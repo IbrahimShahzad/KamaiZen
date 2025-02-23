@@ -279,3 +279,18 @@ func GetCompletionItems(uri lsp.DocumentURI) []lsp.CompletionItem {
 	return completionItems
 
 }
+
+func GetRouteDefinitionAtPosition(
+	uri lsp.DocumentURI,
+	position lsp.Position,
+	source_code []byte,
+) *kamailio_cfg.NamedRoute {
+	node := GetState().Analyzer.GetAST().Node
+	nodeAtPosition := getNodeAtPosition(node, position)
+	if nodeAtPosition == nil {
+		logger.Error("Node at position is nil")
+		return nil
+	}
+	namedRoute := kamailio_cfg.QueryRoute(GetState().Analyzer, source_code)
+	return namedRoute
+}

@@ -40,25 +40,17 @@ type DefinitionProvider struct {
 // Returns:
 //
 //	DefinitionProviderResponse - The initialized response.
-func NewDefintionProviderResponse(id int, contents string) DefinitionProviderResponse {
-	// TODO: fill in the contents and range
+func NewDefintionProviderResponse(id int, contents string, uri DocumentURI, start Position, end Position) DefinitionProviderResponse {
 	return DefinitionProviderResponse{
 		Response: Response{
 			RPC: settings.RPC_VERSION,
 			ID:  id,
 		},
 		Result: Location{
-			// Location is a struct defined in textDocument_hover.go
-			URI: "https://www.kamailio.org/wikidocs/cookbooks/5.8.x/core/",
+			URI: uri,
 			Range: Range{
-				Start: Position{
-					Line:      0,
-					Character: 0,
-				},
-				End: Position{
-					Line:      0,
-					Character: 0,
-				},
+				Start: start,
+				End:   end,
 			},
 		},
 	}
