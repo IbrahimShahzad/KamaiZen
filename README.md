@@ -60,17 +60,14 @@ with `lazy.nvim`
 ```lua
     {
       'IbrahimShahzad/KamaiZen',
-      dependencies = {
-        { 'IbrahimShahzad/KamaiZen', 
-          branch = 'main', -- or tag = 'v0.0.5'
-          build = 'go build' },
-      },
+      branch = 'master', -- or tag = 'v0.0.5'
+      build = 'go build',
       opts = {
         settings = {
           kamaizen = {
             enableDeprecatedCommentHint = true, -- to enable hints for '#' comments
             enableDiagnostics = true, -- to enable/disable diagnostics
-            KamailioSourcePath = vim.fn.getcwd(), -- or path/to/your/kamailio/
+            KamailioSourcePath = "/path/to/kamailio", -- or use current dir vim.fn.getcwd()
             loglevel = 3,
           },
         },
