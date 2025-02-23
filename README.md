@@ -1,6 +1,6 @@
 # KamaiZen
 
-<table>
+<table style="width: 100%;">
   <tr>
     <td><img src="docs/logo.png" alt="KamaiZen" width="200"></td>
     <td>
@@ -39,10 +39,6 @@ Watch a demo of KamaiZen in action:
 - [x] Invalid statements
 - [x] Unreachable code
 - [x] Assignment Errors
-- [x] Function calls from non-loaded modules
-- [x] Unused variables
-- [x] Unused modules
-- [x] Unused parameters
 
 ### Hover
 - [x] Show documentation for functions
@@ -50,35 +46,36 @@ Watch a demo of KamaiZen in action:
 - [x] Core Cookbook items
 - [x] Variables
 
-> [!Caution]
+> [!Note]
 > This is a work in progress, and not all features are available yet and might contain bugs.
 
 ## Installation
 
+### Neovim
+
 with `lazy.nvim`
 
+> [!Note]
+> Make sure to have [go 1.24](https://go.dev/doc/install) installed.
+
 ```lua
-    {
-      'IbrahimShahzad/KamaiZen',
-      branch = 'master', -- or tag = 'v0.0.5'
-      build = 'go build',
-      opts = {
-        settings = {
-          kamaizen = {
-            enableDeprecatedCommentHint = true, -- to enable hints for '#' comments
-            enableDiagnostics = true, -- to enable/disable diagnostics
-            KamailioSourcePath = "/path/to/kamailio", -- or use current dir vim.fn.getcwd()
-            loglevel = 3,
-          },
-        },
+{
+  'IbrahimShahzad/KamaiZen',
+  branch = 'v0.0.5', -- or branch = 'master'
+  build = 'go build',
+  opts = {
+    settings = {
+      kamaizen = {
+        enableDeprecatedCommentHint = true, -- to enable hints for '#' comments
+        enableDiagnostics = true, -- to enable/disable diagnostics
+        KamailioSourcePath = "/path/to/kamailio", -- or use current dir vim.fn.getcwd()
+        loglevel = 3,
       },
-    }
+    },
+  },
+}
 ```
 
-
-## Integration
-
-- [x] Neovim [kamaizen.nvim](https://github.com/IbrahimShahzad/kamaizen.nvim)
 
 ## How To Contrribute
 
@@ -122,11 +119,14 @@ git push origin feature/your-feature-name
 Open a pull request against the main branch of the original repository. Please provide a clear description of your changes and reference any relevant issues.
 
 7. Code Reviews and Feedback:
+
 Your pull request will be reviewed. Be prepared to make adjustments based on feedback.
 
 For any questions or suggestions, please open an issue on GitHub.
 
 ## Future Plans
+
+These are the features that are planned to be implemented in the future:
 
 - [ ] scratch-parser implementation ?
 - [ ] Code navigation
@@ -134,6 +134,8 @@ For any questions or suggestions, please open an issue on GitHub.
   - [ ] Find references for routes - In progress
 - [ ] Code Actions
   - [ ] Add missing modules
+  - [ ] string evaluations
+  - [ ] regex check
 - [ ] Snippets
   - [ ] Route snippets
   - [ ] Module snippets
@@ -147,6 +149,10 @@ For any questions or suggestions, please open an issue on GitHub.
     - [ ] Unused variables
     - [ ] Unused modules
     - [ ] Unused parameters
+
+> [!Note]
+> These are not in any particular order and might change in the future.
+
 ---
 
 Feel free to contribute or open issues if you have suggestions or encounter problems!
