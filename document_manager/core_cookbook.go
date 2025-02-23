@@ -9,7 +9,7 @@ import (
 	"maps"
 )
 
-//go:embed cookbooks_5.2.x.json
+//go:embed cookbooks/cookbook_devel.json
 var cookbooksFile []byte
 
 type DocEntry struct {

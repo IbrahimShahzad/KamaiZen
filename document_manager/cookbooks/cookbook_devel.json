@@ -1,0 +1,1180 @@
+{
+  "docs": [
+    {
+      "name": "maxbuffer",
+      "documentation": "The size in bytes not to be exceeded during the auto-probing procedure of discovering and increasing the maximum OS buffer size for receiving UDP messages (socket option SO_RCVBUF). Default value is 262144.\n\nExample of usage:\n\n  maxbuffer=65536\n\nNote: it is not the size of the internal SIP message receive buffer."
+    },
+    {
+      "name": "modinit_delay",
+      "documentation": "Number of microseconds to wait after initializing a module - useful to cope with systems where are rate limits on new connections to database or other systems.\n\nDefault value is 0 (no wait).\n\nmodinit_delay=100000"
+    },
+    {
+      "name": "wait_worker1_time",
+      "documentation": "How long to wait for child worker one to complete the initialization. In micro-seconds.\n\nDefault: 4000000 (micro-seconds = 4 seconds).\n\nExample:\n\nwait_worker1_time = 1000000"
+    },
+    {
+      "name": "dns_cache_flags",
+      "documentation": "dns_cache_flags = number (default 0) - \n  dns cache specific resolver flags, used for overriding the default behaviour (low level).\n  Possible values:\n    1 - ipv4 only: only DNS A requests are performed, even if Kamailio also listens on ipv6 addresses.\n    2 - ipv6 only: only DNS AAAA requests are performed. Ignored if dns_try_ipv6 is off or Kamailio \n        doesn't listen on any ipv6 address.\n    4 - prefer ipv6: try first to resolve a host name to an ipv6 address (DNS AAAA request) and only\n        if this fails try an ipv4 address (DNS A request). By default the ipv4 addresses are preferred."
+    },
+    {
+      "name": "dns_cache_min_ttl",
+      "documentation": "dns_cache_min_ttl = time in seconds (default 0)"
+    },
+    {
+      "name": "tcp_keepintvl",
+      "documentation": "Time interval between keepalive probes, when the previous probe failed (TCP_KEEPINTVL socket option). Linux only.\n\ntcp_keepintvl = seconds (not set by default)"
+    },
+    {
+      "name": "defenvs",
+      "documentation": "Similar to **#!defenv**, but the value is defined in between double quotes to make it convenient to be used as a string token.\n\n#!defenvs ENVVAR\n#!defenvs ID=ENVVAR"
+    },
+    {
+      "name": "trydefenv",
+      "documentation": "#!trydefenv ID=ENVVAR\n\nSimilar to **defenv**, but will not error if the environmental variable is not set. This allows for boolean defines via system ENVVARs. For example, using an environmental variable to toggle loading of db_mysql:\n\n#!trydefenv WITH_MYSQL\n \n#!ifdef WITH_MYSQL\nloadmodule \"db_mysql.so\"\n#!ifdef"
+    },
+    {
+      "name": "route_locks_size",
+      "documentation": "Set the number of mutex locks to be used for synchronizing the execution of config script for messages sharing the same Call-Id. In other words, enables Kamailio to execute the config script sequentially for the requests and replies received within the same dialog – a new message received within the same dialog waits until the previous one is routed out.\n\nFor smaller impact on parallel processing, its value it should be at least twice the number of Kamailio processes (all children processes).\n\nExample:\n\nroute_locks_size = 256\n\nNote that ordering of the SIP messages can still be changed by network transmission (quite likely for UDP, especially on long distance paths) or CPU allocation for processes when executing pre-config and post-config tasks (very low chance, but not to be ruled out completely)."
+    },
+    {
+      "name": "tcp_no_connect",
+      "documentation": "Stop outgoing TCP connects (also stops TLS) by setting tcp_no_connect to yes.\n\nYou can do this any time, even even if Kamailio is already started (in this case using the command “kamcmd cfg.set_now_int tcp no_connect 1”)."
+    },
+    {
+      "name": "use_dst_blocklist",
+      "documentation": "Enable the destination blocklist: Each failed send attempt will cause the destination to be added to the blocklist. Before any send, this blocklist will be checked and if a match is found, the send is no longer attempted (an error is returned immediately).\n\nNote: using the blocklist incurs a small performance penalty.\n\nSee also doc/dst_blocklist.txt.\n\nuse_dst_blocklist = on | off (default off)\n\n## Real-Time Parameters"
+    },
+    {
+      "name": "disable_core_dump",
+      "documentation": "Can be 'yes' or 'no'. By default core dump limits are set to unlimited or a high enough value. Set this config variable to 'yes' to disable core dump-ing (will set core limits to 0).\n\nDefault value is 'no'.\n\nExample of usage:\n\n  disable_core_dump=yes"
+    },
+    {
+      "name": "ip_free_bind",
+      "documentation": "Alias: ipfreebind, ip_nonlocal_bind\n\nControl if Kamailio should attempt to bind to non local ip. This option is the per-socket equivalent of the system **ip_nonlocal_bind**.\n\nDefault is 0 (do not bind to non local ip).\n\nExample of usage:\n\n  ip_free_bind = 1"
+    },
+    {
+      "name": "verbose_startup",
+      "documentation": "Control if printing routing tree and udp probing buffer debug messages should be printed at startup.\n\nDefault is 0 (don't print); set to 1 to get those debug messages.\n\nExample of usage:\n\n   verbose_startup=1"
+    },
+    {
+      "name": "tls_max_connections",
+      "documentation": "Maximum number of ls connections (if the number is exceeded no new ls connections will be accepted). It cannot exceed tcp_max_connections.\n\nDefault value is 2048.\n\nExample of usage:\n\n  tls_max_connections=4096\n\n## SCTP Parameters"
+    },
+    {
+      "name": "drop",
+      "documentation": "Stop the execution of the configuration script and alter the implicit action which is done afterwards.\n\nIf the function is called in a 'branch_route' then the branch is discarded (implicit action for 'branch_route' is to forward the request).\n\nIf the function is called in the default 'onreply_route' then you can drop any response. If the function is called in a named 'onreply_route' (transaction stateful) then any provisional reply is discarded. (Implicit action for 'onreply_route' is to send the reply upstream according to Via header.)\n\nExample of usage:\n\n  onreply_route {\n      if(status==\"200\") {\n          drop(); # this works\n      }\n  }\n\n  onreply_route[FOOBAR] {\n      if(status==\"200\") {\n          drop(); # this is ignored\n      }\n  }"
+    },
+    {
+      "name": "force_tcp_alias",
+      "documentation": "**Alias name: add_tcp_alias**\n\nforce_tcp_alias(port)\n\nadds a tcp port alias for the current connection (if tcp). Useful if you want to send all the trafic to port_alias through the same connection this request came from [it could help for firewall or nat traversal]. With no parameters adds the port from the message via as the alias. When the “aliased” connection is closed (e.g. it's idle for too much time), all the port aliases are removed."
+    },
+    {
+      "name": "set_advertised_port",
+      "documentation": "Same as 'advertised_port' but it affects only the current message. It has priority over 'advertised_port'.\n\nExample of usage:\n\n  set_advertised_port(5080);"
+    },
+    {
+      "name": "userphone",
+      "documentation": "Add “user=phone” parameter to R-URI.\n\n## Custom Global Parameters\n\nThese are parameters that can be defined by the writer of kamailio.cfg in order to be used inside routing blocks. One of the important properties for custom global parameters is that their value can be changed at runtime via RPC commands, without restarting Kamailio.\n\nThe definition of a custom global parameter must follow the pattern:\n\ngroup.variable = value desc \"description\"\n\nThe value can be a quoted string or integer number.\n\nExample:\n\npstn.gw_ip = \"1.2.3.4\" desc \"PSTN GW Address\"\n\nThe custom global parameter can be accessed inside a routing block via:\n\n$sel(cfg_get.group.variable)\n\nExample:\n\n$ru = \"sip:\" + $rU + \"@\" + $sel(cfg_get.pstn.gw_ip);\n\n**Note:** Some words cannot be used as (part of) names for custom variables or groups, and if they are used a syntax error is logged by kamailio. These keywords are: “yes”, “true”, “on”, “enable”, “no”, “false”, “off”, “disable”, “udp”, “UDP”, “tcp”, “TCP”, “tls”, “TLS”, “sctp”, “SCTP”, “ws”, “WS”, “wss”, “WSS”, “inet”, “INET”, “inet6”, “INET6”, “sslv23”, “SSLv23”, “SSLV23”, “sslv2”, “SSLv2”, “SSLV2”, “sslv3”, “SSLv3”, “SSLV3”, “tlsv1”, “TLSv1”, “TLSV1”\n\n## Routing Blocks\n\nThe routing blocks are the parts of the configuration file executed by kamailio at runtime. They can be seen as blocks of actions similar to functions (or procedures) from common programming languages.\n\nA routing block is identified by a specific token, followed by a name in between square brackets and actions in between curly braces.\n\nroute_block_id[NAME] {\n  ACTIONS\n}\n\nThe name can be any alphanumeric string, with specific routing blocks enforcing a particular format.\n\nNote: route(number) is equivalent to route(“number”).\n\nRoute blocks can be executed on network events (e.g., receiving a SIP message), timer events (e.g., retransmission timeout) or particular events specific to modules.\n\nThere can be so called sub-route blocks, which can be invoked from another route blocks, like a function. Invocation is done with 'route' followed by the name of sub-route to execute, enclosed in between parentheses.\n\nExample:\n\n  request_route{\n    ...\n    route(\"test\");\n    ...\n  }\n \n  route[\"test\"]{\n    ...\n  }"
+    },
+    {
+      "name": "log_facility",
+      "documentation": "If Kamailio logs to syslog, you can control the facility for logging. Very useful when you want to divert all Kamailio logs to a different log file. See the man page syslog(3) for more details.\n\nFor more see: [http://www.kamailio.org/dokuwiki/doku.php/tutorials:debug-syslog-messages](http://www.kamailio.org/dokuwiki/doku.php/tutorials:debug-syslog-messages \"http://www.kamailio.org/dokuwiki/doku.php/tutorials:debug-syslog-messages\")\n\nDefault value is LOG_DAEMON.\n\nExample of usage:\n\n  log_facility=LOG_LOCAL0"
+    },
+    {
+      "name": "wait_worker1_usleep",
+      "documentation": "How long to wait for child worker one to complete the initialization. In micro-seconds.\n\nDefault: 100000 (micro-seconds = 0.1 seconds).\n\nExample:\n\nwait_worker1_usleep = 50000"
+    },
+    {
+      "name": "tcp_accept_hep3",
+      "documentation": "Enable internal TCP receiving stack to accept HEP3 packets. This option has to be set to **yes** on a Kamailio instance acting as Homer SIPCapture server that is supposed to receive HEP3 packets over TCP/TLS.\n\nDefault value is **no**.\n\ntcp_accept_hep3=yes"
+    },
+    {
+      "name": "tcp_wq_blk_size",
+      "documentation": "Block size used for tcp async writes. It should be big enough to hold a few datagrams. If it's smaller then a datagram (in fact a tcp write()) size, it will be rounded up. It has no influenced on the number of datagrams queued (for that see tcp_conn_wq_max or tcp_wq_max). It has mostly debugging and testing value (can be ignored).\n\nDefault: 2100 (~ 2 INVITEs), can be changed at runtime."
+    },
+    {
+      "name": "tos",
+      "documentation": "The TOS (Type Of Service) to be used for the sent IP packages (both TCP and UDP).\n\nExample of usage:\n\n  tos=IPTOS_LOWDELAY\n  tos=0x10\n  tos=IPTOS_RELIABILITY"
+    },
+    {
+      "name": "msg:len",
+      "documentation": "The variable is a reference to the size of the message. It can be used in 'if' constructs to test message's size.\n\nExample of usage:\n\n    if(msg:len\u003e2048)\n    {\n        sl_send_reply(\"413\", \"message too large\");\n        [exit](http://www.opengroup.org/onlinepubs/009695399/functions/exit.html);\n    };\n\n."
+    },
+    {
+      "name": "sip_parser_log",
+      "documentation": "Log level for printing debug messages for some of the SIP parsing errors.\n\nDefault: 0 (L_WARN)\n\nsip_parser_log = 1"
+    },
+    {
+      "name": "disable_sctp",
+      "documentation": "Global parameter to disable SCTP support in the SIP server. see enable_sctp\n\nDefault value is 'auto'.\n\nExample of usage:\n\n  disable_sctp=yes"
+    },
+    {
+      "name": "sctp_init_max_attempts",
+      "documentation": "Maximum INIT retransmission attempts (default: OS specific).\n\nCan be changed at runtime (sctp init_max_attempts).\n\nsctp_init_max_attempts = number"
+    },
+    {
+      "name": "onreply_route",
+      "documentation": "SIP reply routing block executed by **tm** module. It contains a set of actions to be taken for SIP replies in the contect of an active transaction.\n\nThe 'onreply_route' must be armed for the SIP requests whose replies should be processed within it, via t_on_reply(“onreply_route_index”).\n\nCore 'reply_route' block is executed before a possible **tm** 'onreply_route' block.\n\n  request_route {\n      lookup(\"location\");\n      t_on_reply(\"LOGRPL\");\n      if(!t_relay()) {\n          sl_send_reply(\"500\", \"relaying failed\");\n      }\n  }\n \n  reply_route {\n      if(!t_check_trans()) {\n          drop;\n      }\n  }\n \n  onreply_route[LOGRPL] {\n      if(status=~\"1[0-9][0-9]\") {\n           [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"provisional responsen\");\n      }\n  }"
+    },
+    {
+      "name": "sql_buffer_size",
+      "documentation": "The size in bytes of the SQL buffer created for data base queries. For database drivers that use the core db_query library, this will be maximum size object that can be written or read from a database. Default value is 65535.\n\nExample of usage:\n\n  sql_buffer_size=131070"
+    },
+    {
+      "name": "sctp_asocmaxrxt",
+      "documentation": "Maximum retransmissions attempts per association (default: OS specific). It should be set to sctp_pathmaxrxt * no. of expected paths.\n\nCan be changed at runtime (sctp asocmaxrxt) but it will affect only new associations.\n\nsctp_asocmaxrxt   = number"
+    },
+    {
+      "name": "error",
+      "documentation": ""
+    },
+    {
+      "name": "isavpflagset",
+      "documentation": ""
+    },
+    {
+      "name": "rewritehostporttrans",
+      "documentation": "**Alias name: sethostporttrans, sethpt**\n\nRewrite the domain part and port of the R-URI with the value of function's parameter. Also allows to specify the transport parameter. Other parts of the R-URI like username and URI parameters remain unchanged.\n\nExample of usage:\n\n  rewritehostporttrans(\"1.2.3.4:5080\");"
+    },
+    {
+      "name": "children",
+      "documentation": "Number of children to fork for the UDP interfaces (one set for each interface - ip:port). Default value is 8. For example if you configure the proxy to listen on 3 UDP ports, it will create 3xchildren processes which handle the incoming UDP messages.\n\nFor configuration of the TCP/TLS worker threads see the option “tcp_children”.\n\nExample of usage:\n\n  children=16"
+    },
+    {
+      "name": "log_engine_data",
+      "documentation": "Set specific data required by the log engine. See also the **log_engine_type**.\n\nlog_engine_type=\"udp\"\nlog_engine_data=\"127.0.0.1:9\""
+    },
+    {
+      "name": "received_route_mode",
+      "documentation": "Enable or disable the execution of event_route[core:msg-received] routing block or its corresponding Kemi callback.\n\nDefault value: 0 (disabled)\n\nExample of usage:\n\nreceived_route_mode=1"
+    },
+    {
+      "name": "sctp_send_retries",
+      "documentation": "How many times to attempt re-sending a message on a re-opened association, if the sctp stack did give up sending it (it's not related to sctp protocol level retransmission). Useful to improve reliability with peers that reboot/restart or fail over to another machine.\n\nWARNING: use with care and low values (e.g. 1-3) to avoid “multiplying” traffic to unresponding hosts (default: 0).Can be changed at runtime.\n\nsctp_send_retries = 1"
+    },
+    {
+      "name": "dst_blocklist_mem",
+      "documentation": "Maximum shared memory amount used for keeping the blocklisted destinations.\n\ndst_blocklist_mem = size in Kb (default 250 Kb)"
+    },
+    {
+      "name": "force_send_socket",
+      "documentation": "Force to send the message from the specified socket (it _must_ be one of the sockets specified with the “listen” directive). If the protocol doesn't match (e.g. UDP message “forced” to a TCP socket) the closest socket of the same protocol is used.\n\nThis function does not support pseudo-variables, use the set_send_socket function from the corex module instead.\n\nExample of usage:\n\n    force_send_socket(10.10.10.10:5060);\n    force_send_socket(udp:10.10.10.10:5060);"
+    },
+    {
+      "name": "reply_route",
+      "documentation": "Main SIP response (reply) handling block - it contains a set of actions to be executed for SIP replies. It is executed for all replies received from the network.\n\nIt does not have a name and it is executed by the core, before any other module handling the SIP reply. It is triggered only by SIP replies received on the network.\n\nThere is no network route that can be enforced for a SIP reply - it is sent based on Via header, according to SIP RFC3261 - therefore no dedicated actions for forwarding the reply must be used in this block.\n\nThis routing block is optional, if missing, the SIP reply is sent to the address in 2nd Via header.\n\nOne can decide to drop a SIP reply by using **drop** action.\n\nExample:\n\nreply_route {\n  if(status==\"128\") {\n    drop;\n  }\n}\n\nNote: for backward compatibility reasons, the main 'reply' routing block can be also identified by 'onreply_route {…}' or 'onreply_route[0] {…}'."
+    },
+    {
+      "name": "async_workers",
+      "documentation": "Specify how many child processes (workers) to create for asynchronous execution in the group “default”. These are processes that can receive tasks from various components (e.g, modules such as async, acc, sqlops) and execute them locally, which is different process than the task sender.\n\nDefault: 0 (asynchronous framework is disabled).\n\nExample:\n\n    async_workers=4"
+    },
+    {
+      "name": "loadpath",
+      "documentation": "**Alias name: mpath**\n\nSet the module search path. loadpath takes a list of directories separated by ':'. The list is searched in-order. For each directory d, $d/${module_name}.so and $d/${module_name}/${module_name}.so are tried.\n\nThis can be used to simplify the loadmodule parameter and can include many paths separated by colon. First module found is used.\n\nExample of usage:\n\n    loadpath \"/usr/local/lib/kamailio/modules:/usr/local/lib/kamailio/mymodules\"\n \n    loadmodule \"mysql\"\n    loadmodule \"uri\"\n    loadmodule \"uri_db\"\n    loadmodule \"sl\"\n    loadmodule \"tm\"\n\nThe proxy tries to find the modules in a smart way, e.g: loadmodule “uri” tries to find uri.so in the loadpath, but also uri/uri.so."
+    },
+    {
+      "name": "local_rport",
+      "documentation": "Similar to **add_local_rport()** function, but done in a global scope, so the function does not have to be executed for each request.\n\nDefault: off\n\nExample:\n\nlocal_rport = on"
+    },
+    {
+      "name": "tcp_conn_wq_max",
+      "documentation": "Maximum bytes queued for write allowed per connection. Attempting to queue more bytes would result in an error and in the connection being closed (too slow). If tcp_buf_write is not enabled, it has no effect.\n\ntcp_conn_wq_max = bytes (default 32 K)"
+    },
+    {
+      "name": "tls_port_no",
+      "documentation": "The port the SIP server listens to for TLS connections.\n\nDefault value is 5061.\n\nExample of usage:\n\n  tls_port_no=6061"
+    },
+    {
+      "name": "enable_sctp",
+      "documentation": "enable_sctp = 0/1/2  - SCTP disabled (0)/ SCTP enabled (1)/auto (2), \n                       default auto (2)"
+    },
+    {
+      "name": "sctp_send_ttl",
+      "documentation": "Number of milliseconds before an unsent message/chunk is dropped (default: 32000 ms or 32 s). Can be changed at runtime, e.g.:\n\n$ kamcmd cfg.set_now_int sctp send_ttl 180000\n\nsctp_send_ttl = milliseconds - n"
+    },
+    {
+      "name": "debug",
+      "documentation": "Set the debug level. Higher values make Kamailio to print more debug messages. Log messages are usually sent to syslog, except if logging to stderr was activated (see [log_stderror](index.html#log_stderror \"cookbooks:devel:core ↵\") parameter).\n\nThe following log levels are defined:\n\n L_ALERT     -5\n L_BUG       -4\n L_CRIT2     -3\n L_CRIT      -2\n L_ERR       -1\n L_WARN       0 \n L_NOTICE     1 \n L_INFO       2 \n L_DBG        3 \n\nA log message will be logged if its log-level is lower than the defined debug level. Log messages are either produced by the the code, or manually in the configuration script using log() or xlog() functions. For a production server you usually use a log value between -1 and 2.\n\nDefault value: L_WARN (debug=0)\n\nExamples of usage:\n\n*   debug=3: print all log messages. This is only useful for debugging of problems. Note: this produces a lot of data and therefore should not be used on production servers (on a busy server this can easily fill up your hard disk with log messages)\n    \n*   debug=0: This will only log warning, errors and more critical messages.\n    \n*   debug=-6: This will disable all log messages.\n    \n\nValue of 'debug' parameter can also be get and set dynamically using the 'debug' Core MI function or the RPC function, e.g.:\n\nkamcmd cfg.get core debug\nkamcmd cfg.set_now_int core debug 2\nkamcmd cfg.set_now_int core debug -- -1\n\nNote: There is a difference in log-levels between Kamailio 3.x and Kamailio⇐1.5: Up to Kamailio 1.5 the log level started with 4, whereas in Kamailio\u003e=3 the log level starts with 3. Thus, if you were using debug=3 in older Kamailio, now use debug=2.\n\nFor configuration of logging of the memory manager see the parameters [memlog](index.html#memlog \"cookbooks:devel:core ↵\") and [memdbg](index.html#memdbg \"cookbooks:devel:core ↵\").\n\nFurther information can also be found at: [https://www.kamailio.org/wiki/tutorials/3.2.x/syslog](https://www.kamailio.org/wiki/tutorials/3.2.x/syslog \"https://www.kamailio.org/wiki/tutorials/3.2.x/syslog\")"
+    },
+    {
+      "name": "sip_parser_mode",
+      "documentation": "Control sip parser behaviour.\n\nIf set to 1, the parser is more strict in accepting messages that have invalid headers (e.g., duplicate To or From). It can make the system safer, but loses the flexibility to be able to fix invalid messages with config operations.\n\nIf set to 0, the parser is less strict on checking validity of headers.\n\nDefault: 1\n\nsip_parser_mode = 0"
+    },
+    {
+      "name": "tcp_crlf_ping",
+      "documentation": "Enable SIP outbound TCP keep-alive using PING-PONG (CRLFCRLF - CRLF).\n\ntcp_crlf_ping = yes | no default: yes"
+    },
+    {
+      "name": "tcp_delayed_ack",
+      "documentation": "Initial ACK for opened connections will be delayed and sent with the first data segment (see linux tcp(7) TCP_QUICKACK). For now linux only.\n\ntcp_delayed_ack  = yes | no (default yes when supported)"
+    },
+    {
+      "name": "tcp_wq_max",
+      "documentation": "Maximum bytes queued for write allowed globally. It has no effect if tcp_buf_write is not enabled.\n\ntcp_wq_max = bytes (default 10 Mb)\n\n## TLS Parameters\n\nMost of TLS layer attributes can be configured via TLS module parameters."
+    },
+    {
+      "name": "if",
+      "documentation": "IF-ELSE statement\n\nPrototype:\n\n    if(expr) {\n       actions;\n    } else {\n       actions;\n    }\n\nThe 'expr' should be a valid logical expression.\n\nThe logical operators that can be used in 'expr':\n\n  ==      equal\n  !=      not equal\n  =~      regular expression matching: Note: Posix regular expressions will be used, e.g. use [[:digit:]]{3} instead of ddd\n  !~      regular expression not-matching (NOT PORTED from Kamailio 1.x, use '!(x =~ y)')\n  \u003e       greater\n  \u003e=      greater or equal\n  \u003c       less\n  \u003c=      less or equal\n  \u0026\u0026      logical AND\n  ||      logical OR\n  !       logical NOT\n\nExample of usage:\n\n  if(is_method(\"INVITE\"))\n  {\n      log(\"this sip message is an inviten\");\n  } else {\n      log(\"this sip message is not an inviten\");\n  }\n\nSee also the FAQ for how the function return code is evaluated:\n\n*   [https://www.kamailio.org/wiki/tutorials/faq/main#how_is_the_function_return_cod](https://www.kamailio.org/wiki/tutorials/faq/main#how_is_the_function_return_cod \"https://www.kamailio.org/wiki/tutorials/faq/main#how_is_the_function_return_cod\")"
+    },
+    {
+      "name": "port",
+      "documentation": "The port the SIP server listens to. The default value for it is 5060.\n\nExample of usage:\n\n  port=5080"
+    },
+    {
+      "name": "enable_tls",
+      "documentation": "**Alias name: tls_enable**\n\nReverse Meaning of the disable_tls parameter. See disable_tls parameter.\n\nenable_tls=yes # enable tls support in core"
+    },
+    {
+      "name": "log_engine_type",
+      "documentation": "Specify what logging engine to be used and its initialization data. A logging engine is implemented as a module. Supported values are a matter of the module.\n\nFor example, see the readme of **log_custom** module for more details.\n\nlog_engine_type=\"udp\"\nlog_engine_data=\"127.0.0.1:9\""
+    },
+    {
+      "name": "pv_cache_limit",
+      "documentation": "The limit how many pv declarations in the cache after which an action is taken. Default value is 2048.\n\npv_cache_limit=1024"
+    },
+    {
+      "name": "udp4_raw_mtu",
+      "documentation": "MTU value used for UDP IPv4 packets when udp4_raw is enabled. It should be set to the minimum MTU of all the network interfaces that could be used for sending. The default value is 1500. Note that on BSDs it does not need to be set (if set it will be ignored, the proper MTU will be used automatically by the kernel). On Linux it should be set.\n\nThe parameter can be set at runtime (core.udp4_raw_mtu)."
+    },
+    {
+      "name": "dst_ip",
+      "documentation": "The IP of the local interface where the SIP message was received. When the proxy listens on many network interfaces, makes possible to detect which was the one that received the packet.\n\nExample of usage:\n\n   if(dst_ip==127.0.0.1) {\n      [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"message received on loopback interfacen\");\n   };"
+    },
+    {
+      "name": "cfgengine",
+      "documentation": "Set the config interpreter engine for execution of the routing logic inside the configuration file. Default is the native interpreter.\n\nExample of usage:\n\n  cfgengine=\"name\"\n  cfgengine \"name\"\n\nIf name is “native” or “default”, it expects to have in native config interpreter for routing logic.\n\nThe name can be the identifier of an embedded language interpreter, such as “lua” which is registered by the app_lua module:\n\n  cfgengine \"lua\""
+    },
+    {
+      "name": "tcp_async",
+      "documentation": "**Alias name: tcp_buf_write**\n\nIf enabled, all the tcp writes that would block / wait for connect to finish, will be queued and attempted latter (see also tcp_conn_wq_max and tcp_wq_max).\n\n**Note:** It also applies for TLS.\n\ntcp_async = yes | no (default yes)"
+    },
+    {
+      "name": "tcp_children",
+      "documentation": "Number of children processes to be created for reading from TCP connections. If no value is explicitly set, the same number of TCP children as UDP children (see “children” parameter) will be used.\n\nExample of usage:\n\n  tcp_children=4"
+    },
+    {
+      "name": "mem_join",
+      "documentation": "If set to 1, memory manger (e.g., q_malloc) does join of free fragments. It is effective if MEM_JOIN_FREE compile option is defined.\n\nIt can be set via config reload framework.\n\nDefault is 1 (enabled).\n\nmem_join=1\n\nTo change its value at runtime, **kamcmd** needs to be used and the modules **ctl** and **cfg_rpc** loaded. Enabling it can be done with:\n\nkamcmd cfg.set_now_int core mem_join 1\n\nTo disable, set its value to 0."
+    },
+    {
+      "name": "xavp_via_params",
+      "documentation": "Set the name of the XAVP of which subfields will be added as local _Via_ -header parameters.\n\nIf not set, XAVP to Via header parameter manipulation is not applied (default behaviour).\n\nIf set, local Via header gets additional parameters from defined XAVP. Core flag FL_ADD_XAVP_VIA_PARAMS needs to be set¹.\n\nExample:\n\n   xavp_via_params=\"via\"\n\n[1] See function _via_add_xavp_params()_ from “corex” module."
+    },
+    {
+      "name": "dns_try_ipv6",
+      "documentation": "Can be 'yes' or 'no'. If it is set to 'yes' and a DNS lookup fails, it will retry it for ipv6 (AAAA record). Default value is 'no'.\n\nNote: If dns_try_ipv6 is off, no hostname resolving that would result in an ipv6 address would succeed - it doesn't matter if an actual DNS lookup is to be performed or the host is already an ip address. Thus, if the proxy should forward requests to IPv6 targets, this option must be turned on!\n\nExample of usage:\n\n  dns_try_ipv6=yes"
+    },
+    {
+      "name": "tcp_reuse_port",
+      "documentation": "Allows reuse of TCP ports. This means,for example, that the same TCP ports on which Kamailio is listening on, can be used as source ports of new TCP connections when acting as an UAC. Kamailio must have been compiled in a system implementing SO_REUSEPORT (Linux \u003e 3.9.0, FreeBSD, OpenBSD, NetBSD, MacOSX). This parameter takes effect only if also the system on which Kamailio is running on supports SO_REUSEPORT.\n\ntcp_reuse_port = yes (default no)"
+    },
+    {
+      "name": "rewriteuserpass",
+      "documentation": "**Alias name: setuserpass, setup**\n\nRewrite the password part of the R-URI with the value of function's parameter.\n\nExample of usage:\n\n  rewriteuserpass(\"my_secret_passwd\");"
+    },
+    {
+      "name": "Assignment",
+      "documentation": "Assignments can be done like in C, via '=' (equal). The following pseudo-variables can be used in left side of an assignment:\n\n*   Unordered List Item AVPs - to set the value of an AVP\n    \n*   script variables ($var(…)) - to set the value of a script variable\n    \n*   shared variables ($shv(…))\n    \n*   $ru - to set R-URI\n    \n*   $rd - to set domain part of R-URI\n    \n*   $rU - to set user part of R-URI\n    \n*   $rp - to set the port of R-URI\n    \n*   $du - to set dst URI\n    \n*   $fs - to set send socket\n    \n*   $br - to set branch\n    \n*   $mf - to set message flags value\n    \n*   $sf - to set script flags value\n    \n*   $bf - to set branch flags value\n    \n\n$var(a) = 123;\n\nFor avp's there a way to remove all values and assign a single value in one statement (in other words, delete existing AVPs with same name, add a new one with the right side value). This replaces the := assignment operator from kamailio \u003c 3.0.\n\n$(avp(i:3)[*]) = 123;\n$(avp(i:3)[*]) = $null;"
+    },
+    {
+      "name": "to_ip",
+      "documentation": ""
+    },
+    {
+      "name": "alias",
+      "documentation": "Parameter to set alias hostnames for the server. It can be set many times, each value being added in a list to match the hostname when 'myself' is checked.\n\nIt is necessary to include the port (the port value used in the “port=” or “listen=” defintions) in the alias definition otherwise the loose_route() function will not work as expected for local forwards. Even if you do not use 'myself' explicitly (for example if you use the domain module), it is often necessary to set the alias as these aliases are used by the loose_routing function and might be needed to handle requests with pre-loaded route set correctly.\n\nExample of usage:\n\n    alias=other.domain.com:5060\n    alias=another.domain.com:5060\n\nNote: the hostname has to be enclosed in between quotes if it has reserved tokens such as **forward**, **drop** … or operators such as **-** (minus) …"
+    },
+    {
+      "name": "dns_naptr_ignore_rfc",
+      "documentation": "If the DNS lookup should ignore the remote side's protocol preferences, as indicated by the Order field in the NAPTR records and mandated by RFC 2915.\n\n  dns_naptr_ignore_rfc = yes | no (default yes)"
+    },
+    {
+      "name": "af",
+      "documentation": "The address family of the received SIP message. It is INET if the message was received over IPv4 or INET6 if the message was received over IPv6.\n\nExampe of usage:\n\n    if (af==INET6) {\n        [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"Message received over IPv6 linkn\");\n    }"
+    },
+    {
+      "name": "tcp_accept_no_cl",
+      "documentation": "Control whether to throw or not error when there is no Content-Length header for requests received over TCP. It is required to be set to **yes** for XCAP traffic sent over HTTP/1.1 which does not use Content-Length header, but splits large bodies in many chunks. The module **sanity** can be used then to restrict this permission to HTTP traffic only, testing in route block in order to stay RFC3261 compliant about this mandatory header for SIP requests over TCP.\n\nDefault value is **no**.\n\ntcp_accept_no_cl=yes"
+    },
+    {
+      "name": "route",
+      "documentation": "This block is used to define 'sub-routes' - group of actions that can be executed from another routing block. Originally targeted as being executed from 'request_route', it can be executed now from all the other blocks. Be sure you put there the actions valid for the root routing block executing the sub-route.\n\nThe definition of the sub-route block follows the general rules, with a name in between square brackets and actions between curly braces. A sub-route can return an integer value back to the routing block that executed it. The return code can be retrieved via $rc variables.\n\nEvaluation of the return of a subroute is done with following rules:\n\n*   negative value is evaluated as false\n    \n*   0 - is interpreted as **exit**\n    \n*   positive value is evaluated as true\n    \n\nrequest_route {\n  if(route(POSITIVE)) {\n    xlog(\"return number is positiven\");\n  }\n  if( ! route(NEGATIVE)) {\n    xlog(\"return number is negativen\");\n  }\n  if( route(ZERO)) {\n    xlog(\"this log message does not appearn\");\n  }\n}\n \nroute[POSITIVE] {\n  return 10;\n}\n \nroute[NEGATIVE] {\n  return -8;\n}\n \nroute[ZERO] {\n  return 0;\n}\n\nA sub-route can execute another sub-route. There is a limit to the number of recursive levels, avoiding ending up in infinite loops – see **max_recursive_level** global parameter.\n\nThe sub-route blocks allow to make the configuration file modular, simplifying the logic and helping to avoid duplication of actions."
+    },
+    {
+      "name": "max_len",
+      "documentation": "Note: This command was removed."
+    },
+    {
+      "name": "chroot",
+      "documentation": "The value must be a valid path in the system. If set, Kamailio will chroot (change root directory) to its value.\n\nExample of usage:\n\n  chroot=/other/fakeroot"
+    },
+    {
+      "name": "kemi.pre_routing_callback",
+      "documentation": "Set the name of callback function in the KEMI script to be executed as the equivalent of `event_route[core:pre-routing]` block (from the native configuration file).\n\nDefault value: none\n\nSet it to empty string or “none” to skip execution of this callback function.\n\nExample:\n\nkemi.pre_routing_callback=\"ksr_pre_routing\""
+    },
+    {
+      "name": "max_recursive_level",
+      "documentation": "The parameters set the value of maximum recursive calls to blocks of actions, such as sub-routes or chained IF-ELSE (for the ELSE branches). Default is 256.\n\nExample of usage:\n\n  max_recursive_level=500"
+    },
+    {
+      "name": "phone2tel",
+      "documentation": "By enabling this feature, Kamailio internally treats SIP URIs with user=phone parameter as TEL URIs. If you do not want this behavior, you have to turn it off.\n\nDefault value: 1 (enabled)\n\nphone2tel = 0"
+    },
+    {
+      "name": "failure_route",
+      "documentation": "Failed transaction routing block. It contains a set of actions to be taken each transaction that received only negative replies (\u003e=300) for all branches. The 'failure_route' is executed only by TM module after it was armed via t_on_failure(“failure_route_index”).\n\nNote that in 'failure_route' is processed the request that initiated the transaction, not the reply .\n\nExample of usage:\n\n    request_route {\n        lookup(\"location\");\n        t_on_failure(\"TOVOICEMAIL\");\n        if(!t_relay()) {\n            sl_send_reply(\"500\", \"relaying failed\");\n        }\n    }\n    failure_route[TOVOICEMAIL] {\n        if(is_method(\"INVITE\")) {\n             # call failed - relay to voice mail\n             t_relay_to_udp(\"voicemail.server.com\",\"5060\");\n        }\n    }"
+    },
+    {
+      "name": "mem_summary",
+      "documentation": "Parameter to control printing of mmemory debugging information displayed on exit or SIGUSR1. The value can be composed by following flags:\n\n*   1 - dump all the pkg used blocks (status)\n    \n*   2 - dump all the shm used blocks (status)\n    \n*   4 - summary of pkg used blocks\n    \n*   8 - summary of shm used blocks\n    \n*   16 - short status\n    \n\nIf set to 0, nothing is printed.\n\nDefault value: 12\n\nExample:\n\nmem_summary=15"
+    },
+    {
+      "name": "dns_cache_del_nonexp",
+      "documentation": "**Alias name: dns_cache_delete_nonexpired**\n\ndns_cache_del_nonexp = yes | no (default: no) \n  allow deletion of non-expired records from the cache when there is no more space\n  left for new ones. The last-recently used entries are deleted first."
+    },
+    {
+      "name": "rt_timer2_prio",
+      "documentation": "**Alias name: rt_stimer_prio**\n\nLike rt_prio but for the “slow” timer.\n\nrt_timer2_prio=\u003cint\u003e (default 0)\n\n## Core Functions\n\nFunctions exported by core that can be used in route blocks."
+    },
+    {
+      "name": "onsend_route",
+      "documentation": "The route is executed in when a SIP request is sent out. Only a limited number of commands are allowed (drop, if + all the checks, msg flag manipulations, send(), log(), textops::search()).\n\nIn this route the final destination of the message is available and can be checked (with snd_ip, snd_port, to_ip, to_port, snd_proto, snd_af).\n\nThis route is executed only when forwarding requests - it is not executed for replies, retransmissions, or locally generated messages (e.g. via fifo uac).\n\nExample:\n\n  onsend_route {\n    if(to_ip==1.2.3.4 \u0026\u0026 !isflagset(12)){\n      [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(1, \"message blockedn\");\n      drop;\n    }\n  }\n\n*   snd_ip, snd_port - behave like src_ip/src_port, but contain the ip/port Kamailio will use to send the message\n    \n*   to_ip, to_port - like above, but contain the ip/port the message will be sent to (not to be confused with dst_ip/dst_port, which are the destination of the original received request: Kamailio's ip and port on which the message was received)\n    \n*   snd_proto, snd_af - behave like proto/af but contain the protocol/address family that Kamailio will use to send the message\n    \n*   msg:len - when used in an onsend_route, msg:len will contain the length of the message on the wire (after all the changes in the script are applied, Vias are added a.s.o) and not the lentgh of the original message."
+    },
+    {
+      "name": "loadmodule",
+      "documentation": "Loads a module for later usage in the configuration script. The modules is searched in the path specified by **loadpath**.\n\nPrototype: **loadmodule “modulepath”**\n\nIf modulepath is only modulename or modulename.so, then Kamailio will try to search also for **modulename/modulename.so**, very useful when using directly the version compiled in the source tree.\n\nExample of usage:\n\n    loadpath \"/usr/local/lib/kamailio/:usr/local/lib/kamailio/modules/\"\n \n    loadmodule \"/usr/local/lib/kamailio/modules/db_mysql.so\"\n    loadmodule \"modules/usrloc.so\"\n    loadmodule \"tm\"\n    loadmodule \"dialplan.so\""
+    },
+    {
+      "name": "dns_sctp_pref, dns_tcp_pref, dns_tls_pref, dns_udp_pref",
+      "documentation": "**Alias name: dns_sctp_preference, dns_tcp_preference, dns_tls_preference, dns_udp_preference**\n\nSet preference for each protocol when doing naptr lookups. By default dns_udp_pref=30, dns_tcp_pref=20, dns_tls_pref=10 and dns_sctp_pref=20. To use the remote site preferences set all dns_*_pref to the same positive value (e.g. dns_udp_pref=1, dns_tcp_pref=1, dns_tls_pref=1, dns_sctp_pref=1). To completely ignore NAPTR records for a specific protocol, set the corresponding protocol preference to -1 (or any other negative number). (see doc/tutorials/dns.txt for more info)\n\ndns_{udp,tcp,tls,sctp}_pref = number"
+    },
+    {
+      "name": "tcp_accept_aliases",
+      "documentation": "If a message received over a tcp connection has “alias” in its via a new tcp alias port will be created for the connection the message came from (the alias port will be set to the via one).\n\nBased on draft-ietf-sip-connect-reuse-00.txt, but using only the port (host aliases are dangerous, involve extra DNS lookups and the need for them is questionable)\n\nSee force_tcp_alias for more details.\n\nNote: For NAT traversal of TCP clients it is better to not use tcp_accept_aliases but just use nathelper module and fix_nated_[contact|register] functions.\n\nDefault is “no” (off)\n\n tcp_accept_aliases= yes|no"
+    },
+    {
+      "name": "tcp_accept_haproxy",
+      "documentation": "Enable the internal TCP stack to expect a PROXY-protocol-formatted header as the first message of the connection. Both the human-readable (v1) and binary-encoded (v2) variants of the protocol are supported. This option is typically useful if you are behind a TCP load-balancer, such as HAProxy or an AWS' ELB, and allows the load-balancer to provide connection information regarding the upstream client. This enables the use of IP-based ACLs, even behind a load-balancer.\n\nPlease note that enabling this option will reject any inbound TCP connection that does not conform to the PROXY-protocol spec.\n\nFor reference: A PROXY protocol - [https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt](https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt \"https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt\")\n\nDefault value is **no**.\n\ntcp_accept_haproxy=yes"
+    },
+    {
+      "name": "sctp_assoc_tracking",
+      "documentation": "Controls whether or not sctp associations are tracked inside Kamailio. Turning it off would result in less memory being used and slightly better performance, but it will also disable some other features that depend on it (e.g. sctp_assoc_reuse). Default: yes.\n\nCan be changed at runtime (“kamcmd sctp assoc_tracking 0”), but changes will be allowed only if all the other features that depend on it are turned off (for example it can be turned off only if first sctp_assoc_reuse was turned off).\n\nNote: turning sctp_assoc_tracking on/off will delete all the tracking information for all the currently tracked associations and might introduce a small temporary delay in the sctp processing if lots of associations were tracked.\n\nConfig options depending on sctp_assoc_tracking being on: sctp_assoc_reuse.\n\nsctp_assoc_tracking = yes/no"
+    },
+    {
+      "name": "rt_timer1_prio",
+      "documentation": "**Alias name: rt_fast_timer_prio, rt_ftimer_prio**\n\nLike rt_prio but for the “fast” timer process (if real_time \u0026 1).\n\n   \nrt_timer1_prio=\u003cint\u003e (default 0)"
+    },
+    {
+      "name": "description",
+      "documentation": "**Alias name: descr desc**"
+    },
+    {
+      "name": "open_files_limit",
+      "documentation": "If set and bigger than the current open file limit, Kamailio will try to increase its open file limit to this number. Note: Kamailio must be started as root to be able to increase a limit past the hard limit (which, for open files, is 1024 on most systems). “Files” include network sockets, so you need one for every concurrent session (especially if you use connection-oriented transports, like TCP/TLS).\n\nExample of usage:\n\n  open_files_limit=2048"
+    },
+    {
+      "name": "tcp_wait_data",
+      "documentation": "Specify how long to wait (in milliseconds) to wait for data on tcp connections in certain cases. Now applies when reading on tcp connection for haproxy protocol.\n\nDefault: 5000ms (5secs)\n\ntcp_wait_data = 10000"
+    },
+    {
+      "name": "rt_prio",
+      "documentation": "Real time priority used for everything except the timers, if real_time is enabled.\n\nrt_prio = \u003cint\u003e (default 0)"
+    },
+    {
+      "name": "substdefs",
+      "documentation": "#!substdefs \"/ID/subst/\"\n\nSimilar to **subst**, but in addition it adds a **#!define ID “subst”** (note the difference from #!substdef that the value for define is enclosed in double quotes, useful when the define is used in a place for a string value)."
+    },
+    {
+      "name": "dns_cache_init",
+      "documentation": "If off, the dns cache is not initialized at startup and cannot be enabled runtime, that saves some memory.\n\ndns_cache_init = on | off (default on)"
+    },
+    {
+      "name": "group",
+      "documentation": "**Alias name: gid**\n\nThe group id to run Kamailio.\n\nExample of usage:\n\ngroup=\"siprouter\""
+    },
+    {
+      "name": "log_prefix_mode",
+      "documentation": "Control if [log prefix](index.html#log_prefix \"cookbooks:devel:core ↵\") is re-evaluated.\n\nIf set to 0 (default), then log prefix is evaluated when the sip message is received and then reused (recommended if the **log_prefix** has only variables that have same value for same message). This is the current behaviour of **log_prefix** evaluation.\n\nIf set to 1, then the log prefix is evaluated before/after each config action (needs to be set when the **log_prefix** has variables that are different based on the context of config execution, e.g., $cfg(line)).\n\nExample:\n\nlog_prefix_mode=1"
+    },
+    {
+      "name": "pmtu_discovery",
+      "documentation": "If enabled, the Don't Fragment (DF) bit will be set in outbound IP packets.\n\npmtu_discovery = 0 | 1 (default 0)"
+    },
+    {
+      "name": "resetavpflag",
+      "documentation": ""
+    },
+    {
+      "name": "branch_route",
+      "documentation": "Request's branch routing block. It contains a set of actions to be taken for each branch of a SIP request. It is executed only by TM module after it was armed via t_on_branch(“branch_route_index”).\n\nExample of usage:\n\n    request_route {\n        lookup(\"location\");\n        t_on_branch(\"OUT\");\n        if(!t_relay()) {\n            sl_send_reply(\"500\", \"relaying failed\");\n        }\n    }\n    branch_route[OUT] {\n        if(uri=~\"10.10.10.10\") {\n            # discard branches that go to 10.10.10.10\n            drop();\n        }\n    }"
+    },
+    {
+      "name": "disable_tls",
+      "documentation": "**Alias name: tls_disable**\n\nGlobal parameter to disable TLS support in the SIP server. Default value is 'no'.\n\nNote: Make sure to load the “tls” module to get tls functionality.\n\nExample of usage:\n\n  disable_tls=yes\n\nIn Kamailio TLS is implemented as a module. Thus, the TLS configuration is done as module configuration. For more details see the README of the TLS module: [http://kamailio.org/docs/modules/devel/modules/tls.html](http://kamailio.org/docs/modules/devel/modules/tls.html \"http://kamailio.org/docs/modules/devel/modules/tls.html\")"
+    },
+    {
+      "name": "TLS",
+      "documentation": "This keyword can be used to test the value of 'proto' and check whether the SIP packet was received over TLS or not.\n\nExample of usage:\n\n  if(proto==TLS)\n  {\n      [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"the SIP message was received over TLSn\");\n  };"
+    },
+    {
+      "name": "kemi.reply_route_callback",
+      "documentation": "Set the name of callback function in the KEMI script to be executed as the equivalent of `reply_route` block (from the native configuration file).\n\nDefault value: ksr_reply_route\n\nSet it to empty string or “none” to skip execution of this callback function.\n\nExample:\n\nkemi.onsend_route_callback=\"ksr_my_reply_route\""
+    },
+    {
+      "name": "log",
+      "documentation": "Write text message to standard error terminal or syslog. You can specify the log level as first parameter.\n\nFor more see: [http://www.kamailio.org/dokuwiki/doku.php/tutorials:debug-syslog-messages](http://www.kamailio.org/dokuwiki/doku.php/tutorials:debug-syslog-messages \"http://www.kamailio.org/dokuwiki/doku.php/tutorials:debug-syslog-messages\")\n\nExample of usage:\n\n  log(\"just some text messagen\");"
+    },
+    {
+      "name": "INET",
+      "documentation": "This keyword can be used to test whether the SIP packet was received over an IPv4 connection.\n\nExample of usage:\n\n    if (af==INET) {\n        [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"the SIP message was received over IPv4n\");\n    }"
+    },
+    {
+      "name": "advertised_port",
+      "documentation": "The port advertised in Via header. If empty or not set (default value) the port from where the message will be sent is used. Same warnings as for 'advertised_address'.\n\nExample of usage:\n\n  advertised_port=5080\n\nNote: this option may be deprecated and removed in the near future, it is recommended to set **advertise** option for **listen** parameter."
+    },
+    {
+      "name": "workdir",
+      "documentation": "**Alias name: wdir**\n\nThe working directory used by Kamailio at runtime. You might find it useful when it comes to generating core files :)\n\nExample of usage:\n\n   wdir=\"/usr/local/kamailio\"\n   or\n   wdir=/usr/kam_wd"
+    },
+    {
+      "name": "add_local_rport",
+      "documentation": "Add **rport** parameter to local generated Via header – see RFC3581. In effect for forwarded SIP requests.\n\nExample of usage:\n\nadd_local_rport();"
+    },
+    {
+      "name": "rewriteuri",
+      "documentation": "**Alias name: seturi**\n\nRewrite the request URI.\n\nExample of usage:\n\n  rewriteuri(\"sip:test@kamailio.org\");"
+    },
+    {
+      "name": "rewriteuser",
+      "documentation": "**Alias name: setuser, setu**\n\nRewrite the user part of the R-URI with the value of function's parameter.\n\nExample of usage:\n\n  rewriteuser(\"newuser\");"
+    },
+    {
+      "name": "substdef",
+      "documentation": "#!substdef \"/ID/subst/\"\n\nSimilar to **subst**, but in addition it adds a **#!define ID subst**."
+    },
+    {
+      "name": "snd_ip",
+      "documentation": ""
+    },
+    {
+      "name": "memdbg",
+      "documentation": "**Alias name: mem_dbg**\n\nThis parameter specifies on which log level the memory debugger messages will be logged. If memdbg is active, every request (alloc, free) to the memory manager will be logged. (Note: if compile option NO_DEBUG is specified, there will never be logging from the memory manager).\n\nDefault value: L_DBG (memdbg=3)\n\nFor example, memdbg=2 means that memory debugging is activated if the debug level is 2 or higher.\n\ndebug=3    # no memory debugging as debug level \nmemdbg=4   # is lower than memdbg\n\ndebug=3    # memory debugging is active as the debug level \nmemdbg=2   # is higher or equal memdbg\n\nPlease see also [memlog](index.html#memlog \"cookbooks:devel:core ↵\") and [debug](index.html#debug \"cookbooks:devel:core ↵\")."
+    },
+    {
+      "name": "set_forward_no_connect",
+      "documentation": "The message will be forwarded only if there is already an existing connection to the destination. It applies only to connection oriented protocols like TCP and TLS (TODO: SCTP), for UDP it will be ignored. The behavior depends in which route block the function is called:\n\n*   normal request route: affects stateless forwards and tm. For tm it affects all the branches and the possible retransmissions (in fact there are no retransmission for TCP/TLS).\n    \n\n*   onreply_route[0] (stateless): equivalent to set_reply_*() (it's better to use set_reply_* though)\n    \n\n*   onreply_route[!=0] (tm): ignored\n    \n\n*   branch_route: affects the current branch only (all messages sent on this branch, like possible retransmissions and CANCELs).\n    \n\n*   onsend_route: like branch route\n    \n\nExample of usage:\n\n  route {\n    ...\n    if (lookup()) {\n      //requests to local users. They are usually behind NAT so it does not make sense to try\n      //to establish a new TCP connection \n      set_forward_no_connect();\n      t_relay();\n    }\n    ...\n  }"
+    },
+    {
+      "name": "snd_proto",
+      "documentation": ""
+    },
+    {
+      "name": "UDP",
+      "documentation": "This keyword can be used to test the value of 'proto' and check whether the SIP packet was received over UDP or not.\n\nExample of usage:\n\n  if(proto==UDP)\n  {\n      [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"the SIP message was received over UDPn\");\n  };"
+    },
+    {
+      "name": "mlock_pages",
+      "documentation": "Locks all Kamailio pages into memory making it unswappable (in general one doesn't want his SIP proxy swapped out ![:-)](https://www.kamailio.org/wiki/lib/images/smileys/smile.svg))\n\nmlock_pages = yes |no (default no)"
+    },
+    {
+      "name": "user",
+      "documentation": "**Alias name: uid**\n\nThe user id to run Kamailio (Kamailio will suid to it).\n\nExample of usage:\n\n    user=\"kamailio\""
+    },
+    {
+      "name": "String Operations",
+      "documentation": "For strings, '+' is available to concatenate.\n\n$var(a) = \"test\";\n$var(b) = \"sip:\" + $var(a) + \"@\" + $fd;"
+    },
+    {
+      "name": "latency_cfg_log",
+      "documentation": "If set to a log level less or equal than debug parameter, a log message with the duration in microseconds of executing request route or reply route is printed to syslog.\n\nDefault value is 3 (L_DBG).\n\nExample:\n\nlatency_cfg_log=2"
+    },
+    {
+      "name": "is_int",
+      "documentation": "Checks if a pseudo variable argument contains integer value.\n\nif(is_int(\"$avp(foobar)\")) {\n  log(\"foobar contains an integern\");\n}"
+    },
+    {
+      "name": "event_route",
+      "documentation": "Generic type of route executed when specific events happen.\n\nPrototype: event_route[groupid:eventid]\n\n*   groupid - should be the name of the module that triggers the event\n    \n*   eventid - some meaningful short text describing the event\n    \n\n#### Core Event Routes\n\nImplementations:\n\n*   **event_route[core:worker-one-init]** - executed by core after the first udp sip worker process executed the child_init() for all modules, before starting to process sip traffic\n    \n    *   note that due to forking, other sip workers can get faster to listening for sip traffic\n        \n\nevent_route[core:worker-one-init] {\n        xlog(\"L_INFO\",\"Hello worldn\");\n}\n\n*   **event_route[core:msg-received]** - executed when a message is received from the network. It runs with a faked request and makes available the $rcv(key) variables to access what was received and related attribtues.\n    \n    *   it has to be enabled with received_route_mode global parameter. For usage via Kemi, set kemi.received_route_callback global parameter.\n        \n    *   if drop is executed, the received message is no longer processed\n        \n\nevent_route[core:msg-received] {\n  xlog(\"rcv on $rcv(af)/$rcv(proto): ($rcv(len)) [$rcv(buf)] from [$rcv(srcip):$rcv(srcport)] to [$rcv(rcvip):$rcv(rcvport)]n\");\n  if($rcv(srcip) == \"1.2.3.4\") {\n    drop;\n  }\n}\n\n*   **event_route[core:pre-routing]** - executed by core on receiving SIP traffic before running request_route or reply_route.\n    \n    *   if drop is used, then the message is not processed further with request_route or reply_route in the same process. This can be useful together with sworker module which can delegate the processing to another worker.\n        \n\nasync_workers_group=\"name=reg;workers=4\"\n...\nevent_route[core:pre-routing] {\n    xinfo(\"pre-routing rulesn\");\n    if(is_method(\"REGISTER\")) {\n        # delegate processing of REGISTERs to a special group of workers\n        if(sworker_task(\"reg\")) {\n            drop;\n        }\n    }\n}\n\n*   **event_route[core:receive-parse-error]** - executed by core on receiving a broken SIP message that can not be parsed.\n    \n    *   note that the SIP message is broken in this case, but it gets access to source and local socket addresses (ip, port, proto, af) as well as the whole message buffer and its size\n        \n\nevent_route[core:receive-parse-error] {\n        xlog(\"got an parsing error from $si:$sp, message $mbn\");\n}\n\n#### Module Event Routes\n\nHere are only a few examples, to see if a module exports event_route blocks and when they are executed, check the readme of the module.\n\n*   **event_route[htable:mod-init]** - executed by **htable** module after all modules have been initialised. Good for initialising values in hash tables.\n    \n\nmodparam(\"htable\", \"htable\", \"a=\u003esize=4;\")\n \nevent_route[htable:mod-init] {\n  $sht(a=\u003ecalls-to::10.10.10.10) = 0;\n  $sht(a=\u003emax-calls-to::10.10.10.10) = 100;\n}\n \nrequest_route {\n  if(is_method(\"INVITE\") \u0026\u0026 !has_totag())\n  {\n    switch($rd) {\n      case \"10.10.10.10\":\n        lock(\"calls-to::10.10.10.10\");\n        $sht(a=\u003ecalls-to::10.10.10.10) =\n            $sht(a=\u003ecalls-to::10.10.10.10) + 1;\n        unlock(\"calls-to::10.10.10.10\");\n        if($sht(a=\u003ecalls-to::10.10.10.10)\u003e$sht(a=\u003emax-calls-to::10.10.10.10))\n        {\n           sl_send_reply(\"500\", \"To many calls to .10\");\n           [exit](http://www.opengroup.org/onlinepubs/009695399/functions/exit.html);\n        }\n      break;\n      ...\n    }\n  }\n}\n\n*   **event_route [tm:local-request]** - executed on locally generated requests.\n    \n\nevent_route [tm:local-request] { # Handle locally generated requests\n  xlog(\"L_INFO\", \"Routing locally generated $rm to \u003c$ru\u003en\");\n  t_set_fr(10000, 10000);\n}\n\n*   **event_route [tm:branch-failure]** - executed on all failure responses.\n    \n\nrequest_route {\n    ...\n    t_on_branch_failure(\"myroute\");\n    t_relay();\n}\n \nevent_route[tm:branch-failure:myroute] {\n  xlog(\"L_INFO\", \"Handling $T_reply_code response to $rm to \u003c$ru\u003en\");\n  if (t_check_status(\"430\")) { # Outbound flow failed\n    unregister(\"location\", \"$tu\", \"$T_reply_ruid\");\n    if (t_next_contact_flow()) {\n      t_relay();\n    }\n  }\n}\n\n## Script Statements"
+    },
+    {
+      "name": "method",
+      "documentation": "The variable is a reference to the SIP method of the message.\n\nExample of usage:\n\n    if(method==\"REGISTER\")\n    {\n       [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"this SIP request is a REGISTER messagen\");\n    };"
+    },
+    {
+      "name": "async_usleep",
+      "documentation": "Set the number of microseconds to sleep before trying to receive next task (can be useful when async_nonblock=1).\n\nDefault: 0\n\nExample:\n\n    async_usleep=100"
+    },
+    {
+      "name": "version_table",
+      "documentation": "Set the name of the table holding the table version. Useful if the proxy is sharing a database within a project and during upgrades. Default value is “version”.\n\nExample of usage:\n\n   version_table=\"version44\""
+    },
+    {
+      "name": "rev_dns",
+      "documentation": "This parameter controls if the SIP server will try doing a reverse DNS lookup on the source IP of a sip request to decide if adding a received=\u003csrc_ip\u003e parameter to the Via is necessary (if the Via contains a DNS name instead of an IP address, the result of the reverse dns on the source IP will be compared with the DNS name in the Via). See also dns (the effect is cumulative, both can be turned on and in that case if the DNS lookup test fails the reverse DNS test will be tried). Note that Vias containing DNS names (instead of IPs) should have received= added, so turning rev_dns to yes is not recommended.\n\nDefault is no."
+    },
+    {
+      "name": "dns_search_full_match",
+      "documentation": "When name was resolved using dns search list, check the domain added in the answer matches with one from the search list (small performance hit, but more safe)\n\ndns_search_full_match = yes | no (default yes)"
+    },
+    {
+      "name": "sctp_pathmaxrxt",
+      "documentation": "Maximum retransmission attempts per path (see also sctp_asocmaxrxt). Default: OS specific.\n\nCan be changed at runtime (sctp pathmaxrxt) but it will affect only new associations.\n\nsctp_pathmaxrxt = number"
+    },
+    {
+      "name": "isflagset",
+      "documentation": "Test if a flag is set for current processed message (if the flag value is 1). The value of the parameter can be in range of 0..31.\n\nFor more see: [https://www.kamailio.org/wiki/tutorials/kamailio-flag-operations](https://www.kamailio.org/wiki/tutorials/kamailio-flag-operations \"https://www.kamailio.org/wiki/tutorials/kamailio-flag-operations\").\n\nExample of usage:\n\n  if(isflagset(3)) {\n      log(\"flag 3 is setn\");\n  };\n\nKamailio also supports named flags. They have to be declared at the beginning of the config file with:\n\n flags  flag1_name[:position],  flag2_name ...\n\nExample:\n\n     flags test, a:1, b:2 ;\n     route{\n            setflag(test);\n            if (isflagset(a)){ # equiv. to isflagset(1)\n              ....\n            }\n            resetflag(b);  # equiv. to resetflag(2)"
+    },
+    {
+      "name": "uri",
+      "documentation": "This variable can be used to test the value of the request URI.\n\nExample of usage:\n\n    if(uri=~\"sip:.+@kamailio.org\")\n    {\n        [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"this is a request for kamailio.org usersn\");\n    };\n\n## Core Values\n\nValues that can be used in `'if`' expressions to check against Core Keywords"
+    },
+    {
+      "name": "force_rport",
+      "documentation": "Force_rport() adds the rport parameter to the first Via header of the received message. Thus, Kamailio will add the received port to the top most Via header in the SIP message, even if the client does not indicate support for rport. This enables subsequent SIP messages to return to the proper port later on in a SIP transaction.\n\nThis is useful for NAT traversal, to enforce symmetric response signaling.\n\nThe rport parameter is defined in RFC 3581.\n\nNote: there is also a force_rport parameter which changes the gobal behavior of the SIP proxy.\n\nExample of usage:\n\n  force_rport();"
+    },
+    {
+      "name": "fork",
+      "documentation": "If set to 'yes' the proxy will fork and run in daemon mode - one process will be created for each network interface the proxy listens to and for each protocol (TCP/UDP), multiplied with the value of 'children' parameter.\n\nWhen set to 'no', the proxy will stay bound to the terminal and runs as single process. First interface is used for listening to. This is equivalent to setting the server option “-F”.\n\nDefault value is 'yes'.\n\nExample of usage:\n\n  fork=no"
+    },
+    {
+      "name": "reply_to_via",
+      "documentation": "If it is set to 1, any local reply is sent to the IP address advertised in top most Via of the request instead of the IP address from which the request was received. Default value is 0 (off).\n\nExample of usage:\n\n  reply_to_via=0"
+    },
+    {
+      "name": "server_signature",
+      "documentation": "This parameter controls the “Server” header in any locally generated message.\n\nExample of usage:\n\n   server_signature=no\n\nIf it is enabled (default=yes) a header is generated as in the following example:\n\n   Server: Kamailio (\u003cversion\u003e (\u003carch\u003e/\u003cos\u003e))"
+    },
+    {
+      "name": "socket_workers",
+      "documentation": "Number of workers to process SIP traffic per listen socket - typical use is before a **listen** global parameter.\n\n*   when used before **listen** on UDP or SCTP socket, it overwrites **children** or **sctp_children** value for that socket.\n    \n*   when used before **listen** on TCP or TLS socket, it adds extra tcp workers, these handling traffic only on that socket.\n    \n\nThe value of **socket_workers** is reset with next **listen** socket definition that is added, thus use it for each **listen** socket where you want custom number of workers.\n\nIf this parameter is not used at all, the values for **children**, **tcp_children** and **sctp_children** are used as usually.\n\nExample for udp sockets:\n\nchildren=4\nsocket_workers=2\nlisten=udp:127.0.0.1:5080\nlisten=udp:127.0.0.1:5070\nlisten=udp:127.0.0.1:5060\n\n*   it will start 2 workers to handle traffic on udp:127.0.0.1:5080 and 4 for each of udp:127.0.0.1:5070 and udp:127.0.0.1:5060. In total there are 10 worker processes\n    \n\nExample for tcp sockets:\n\nchildren=4\nsocket_workers=2\nlisten=tcp:127.0.0.1:5080\nlisten=tcp:127.0.0.1:5070\nlisten=tcp:127.0.0.1:5060\n\n*   it will start 2 workers to handle traffic on tcp:127.0.0.1:5080 and 4 to handle traffic on both tcp:127.0.0.1:5070 and tcp:127.0.0.1:5060. In total there are 6 worker processes"
+    },
+    {
+      "name": "tcp_poll_method",
+      "documentation": "Poll method used (by default the best one for the current OS is selected). For available types see io_wait.c and poll_types.h: none, poll, epoll_lt, epoll_et, sigio_rt, select, kqueue, /dev/poll\n\nExample of usage:\n\n  tcp_poll_method=select"
+    },
+    {
+      "name": "tcp_send_timeout",
+      "documentation": "Time in seconds after a TCP connection will be closed if it is not available for writing in this interval (and Kamailio wants to send something on it). Lower this value for faster detection of broken TCP connections. The default value is 10s.\n\nExample of usage:\n\n  tcp_send_timeout=3"
+    },
+    {
+      "name": "auto_aliases",
+      "documentation": "Kamailio by default discovers all IPv4 addresses on all interfaces and does a reverse DNS lookup on these addresses to find host names. Discovered host names are added to aliases list, matching the **myself** condition. To disable host names auto-discovery, turn off auto_aliases.\n\nExample:\n\n    auto_aliases=no"
+    },
+    {
+      "name": "ipv6_hex_style",
+      "documentation": "Can be set to “a”, “A” or “c” to specify if locally computed string representation of IPv6 addresses should be expanded lowercase, expanded uppercase or compacted lowercase hexa digits.\n\nDefault is “c” (compacted lower hexa digits, conforming better with RFC 5952).\n\n“A” is preserving the behaviour before this global parameter was introduced, while “a” enables the ability to follow some of the recommendations of RFC 5952, section 4.3.\n\nExample of usage:\n\n  ipv6_hex_style = \"a\""
+    },
+    {
+      "name": "latency_limit_action",
+      "documentation": "Limit of latency in us (micro-seconds) for config actions. If a config action executed by cfg interpreter takes longer than its value, a message is printed in the logs, showing config path, line and action name when it is a module function, as well as internal action id.\n\nDefault value is 0 (disabled).\n\nlatency_limit_action=500"
+    },
+    {
+      "name": "dns_cache_max_ttl",
+      "documentation": "dns_cache_max_ttl = time in seconds (default MAXINT)"
+    },
+    {
+      "name": "tcp_source_ipv4, tcp_source_ipv6",
+      "documentation": "Set the source IP for all outbound TCP connections. If setting of the IP fails, the TCP connection will use the default IP address.\n\ntcp_source_ipv4 = IPv4 address\ntcp_source_ipv6 = IPv6 address"
+    },
+    {
+      "name": "sctp_assoc_reuse",
+      "documentation": "Controls sctp association reuse. For now only association reuse for replies is affected by it. Default: yes. Depends on sctp_assoc_tracking being on.\n\nNote that even if turned off, if the port in via corresponds to the source port of the association the request was sent on or if rport is turned on (force_rport() or via containing a rport option), the association will be automatically reused by the sctp stack. Can be changed at runtime (sctp assoc_reuse), but it can be turned on only if sctp_assoc_tracking is on.\n\nsctp_assoc_reuse = yes/no"
+    },
+    {
+      "name": "sctp_hbinterval",
+      "documentation": "sctp heartbeat interval. Setting it to -1 will disable the heartbeats. Default: OS specific.\n\nCan be changed at runtime (sctp hbinterval) but it will affect only new associations.\n\nsctp_hbinterval = milliseconds"
+    },
+    {
+      "name": "sctp_srto_min",
+      "documentation": "Minimum value of the retransmission timeout (RTO) (default: OS specific).\n\nWARNING: values lower then the sctp sack_delay of any peer might cause retransmissions and possible interoperability problems. According to the standard the sack_delay should be between 200 and 500 ms, so avoid trying values lower then 500 ms unless you control all the possible sctp peers and you do make sure their sack_delay is higher or their sack_freq is 1.\n\nCan be changed at runtime (sctp srto_min) but it will affect only new associations.\n\nsctp_srto_min = milliseconds"
+    },
+    {
+      "name": "corelog",
+      "documentation": "Set the debug level used to print some log messages from core, which might become annoying and don't represent critical errors. For example, such case is failure to parse incoming traffic from the network as SIP message, due to someone sending invalid content.\n\nDefault value is -1 (L_ERR).\n\nExample of usage:\n\ncorelog=1"
+    },
+    {
+      "name": "kemi.onsend_route_callback",
+      "documentation": "Set the name of callback function in the KEMI script to be executed as the equivalent of `onsend_route` block (from the native configuration file).\n\nDefault value: ksr_onsend_route\n\nSet it to empty string or “none” to skip execution of this callback function.\n\nExample:\n\nkemi.onsend_route_callback=\"ksr_my_onsend_route\""
+    },
+    {
+      "name": "memlog",
+      "documentation": "**Alias name: mem_log**\n\nThis parameter specifies on which log level the memory statistics will be logged. If memlog is active, Kamailio will log memory statistics on shutdown (or if requested via signal SIGUSR1). This can be useful for debugging of memory leaks.\n\nDefault value: L_DBG (memlog=3)\n\nFor example, memlog=2 means that memory statistics dumping is activated if the debug level is 2 or higher.\n\ndebug=3    # no memory statistics as debug level \nmemlog=4   # is lower than memlog\n\ndebug=3    # dumping of memory statistics is active as the \nmemlog=2   # debug level is higher or equal memlog\n\nPlease see also [memdbg](index.html#memdbg \"cookbooks:devel:core ↵\") and [debug](index.html#debug \"cookbooks:devel:core ↵\")."
+    },
+    {
+      "name": "tcp_defer_accept",
+      "documentation": "Tcp accepts will be delayed until some data is received (improves performance on proxies with lots of opened tcp connections). See linux tcp(7) TCP_DEFER_ACCEPT or freebsd ACCF_DATA(0). For now linux and freebsd only.\n\nWARNING: the linux TCP_DEFER_ACCEPT is buggy (⇐2.6.23) and doesn't work exactly as expected (if no data is received it will retransmit syn acks for ~ 190 s, irrespective of the set timeout and then it will silently drop the connection without sending a RST or FIN). Try to use it together with tcp_syncnt (this way the number of retrans. SYNACKs can be limited ⇒ the timeout can be controlled in some way).\n\nOn FreeBSD:\n\ntcp_defer_accept =  yes | no (default no)\n\nOn Linux:\n\ntcp_defer_accept =  number of seconds before timeout (default disabled)"
+    },
+    {
+      "name": "tcp_script_mode",
+      "documentation": "Specify if connection should be closed (set to CONN_ERROR) if processing the received message results in error (that can also be due to negative return code from a configuration script main route block). If set to 1, the processing continues with the connection open.\n\nDefault 0 (close connection)\n\ntcp_script_mode = 1"
+    },
+    {
+      "name": "udp_mtu_try_proto(proto)",
+      "documentation": "*   proto - TCP|TLS|SCTP|UDP - like udp_mtu_try_proto global parameter but works on a per packet basis and not globally.\n    \n\nExample:\n\nif($rd==\"10.10.10.10\")\n    udp_mtu_try_proto(SCTP);"
+    },
+    {
+      "name": "advertised_address",
+      "documentation": "It can be an IP address or string and represents the address advertised in Via header. If empty or not set (default value) the socket address from where the request will be sent is used.\n\nWARNING: \n- don't set it unless you know what you are doing (e.g. nat traversal)\n- you can set anything here, no check is made (e.g. foo.bar will be accepted even if foo.bar doesn't exist)\n\nExample of usage:\n\n  advertised_address=\"​1.2.3.4\"​\n  advertised_address=\"kamailio.org\"\n\nNote: this option may be deprecated and removed in the near future, it is recommended to set **advertise** option for **listen** parameter."
+    },
+    {
+      "name": "rundir",
+      "documentation": "Alias: run_dir\n\nSet the folder for creating runtime files such as MI fifo or CTL unixsocket.\n\nDefault: /var/run/kamailio\n\nExample of usage:\n\nrundir=\"/tmp\""
+    },
+    {
+      "name": "setavpflag",
+      "documentation": ""
+    },
+    {
+      "name": "kemi.received_route_callback",
+      "documentation": "Set the name of callback function in the KEMI script to be executed as the equivalent of `event_route[core:msg-received]` block (from the native configuration file). For execution, it also require to have the received_route_mode global parameter set to 1.\n\nDefault value: none\n\nSet it to empty string or “none” to skip execution of this callback function.\n\nExample:\n\nkemi.received_route_callback=\"ksr_my_receieved_route\""
+    },
+    {
+      "name": "dst_blocklist_expire",
+      "documentation": "**Alias name: dst_blocklist_ttl**\n\nHow much time a blocklisted destination will be kept in the blocklist (w/o any update).\n\ndst_blocklist_expire = time in s (default 60 s)"
+    },
+    {
+      "name": "rt_timer1_policy",
+      "documentation": "**Alias name: rt_ftimer_policy**\n\nLike rt_policy but for the “fast” timer.\n\nrt_timer1_policy=\u003c0..3\u003e (default 0)"
+    },
+    {
+      "name": "exec",
+      "documentation": ""
+    },
+    {
+      "name": "max_while_loops",
+      "documentation": "The parameters set the value of maximum loops that can be done within a “while”. Comes as a protection to avoid infinite loops in config file execution. Default is 100. Setting to 0 disables the protection (you will still get a warning when you start Kamailio if you do something like while(1) {…}).\n\nExample of usage:\n\n  max_while_loops=200"
+    },
+    {
+      "name": "dns",
+      "documentation": "This parameter controls if the SIP server will try doing a DNS lookup on the address in the Via header of a received sip request to decide if adding a received=\u003csrc_ip\u003e parameter to the Via is necessary. Note that Vias containing DNS names (instead of IPs) should have received= added, so turning dns to yes is not recommended.\n\nDefault is no."
+    },
+    {
+      "name": "dns_srv_lb",
+      "documentation": "**Alias name: dns_srv_loadbalancing**\n\nEnable dns srv weight based load balancing (see doc/tutorials/dns.txt)\n\ndns_srv_lb = yes | no (default no)"
+    },
+    {
+      "name": "use_dns_cache",
+      "documentation": "Tells if DNS responses are cached - this means that the internal DNS resolver (instead of the system's stub resolver) will be used. If set to “off”, disables caching of DNS responses and, as side effect, DNS failover. Default is “on”. Settings can be changed also during runtime (switch from internal to system resolver and back)."
+    },
+    {
+      "name": "sctp_srto_initial",
+      "documentation": "Initial value of the retr. timeout, used in RTO calculations (default: OS specific).\n\nCan be changed at runtime (sctp srto_initial) but it will affect only new associations.\n\nsctp_srto_initial = milliseconds"
+    },
+    {
+      "name": "mhomed",
+      "documentation": "Set the server to try to locate outbound interface on multihomed host. This parameter affects the selection of the outgoing socket for forwarding requests. By default is off (0) - it is rather time consuming. When deactivated, the incoming socket will be used or the first one for a different protocol, disregarding the destination location. When activated, Kamailio will select a socket that can reach the destination (to be able to connect to the remote address). (Kamailio opens a UDP socket to the destination, then it retrieves the local IP which was assigned by the operating system to the new UDP socket. Then this socket will be closed and the retrieved IP address will be used as IP address in the Via/Record-Route headers)\n\nExample of usage:\n\n  mhomed=1"
+    },
+    {
+      "name": "tcp_connection_match",
+      "documentation": "If set to 1, try to be more strict in matching outbound TCP connections, attempting to lookup first the connection using also local port, not only the local IP and remote IP+port.\n\nDefault is 0.\n\ntcp_connection_match=1"
+    },
+    {
+      "name": "set_forward_close",
+      "documentation": "Try to close the connection (the one on which the message is sent out) after forwarding the current message. Can be used in same route blocks as set_forward_no_connect().\n\nNote: Use with care as you might not receive the replies anymore as the connection is closed."
+    },
+    {
+      "name": "Arithmetic Operations",
+      "documentation": "For numbers, one can use:\n\n*   + : plus\n    \n*   - : minus\n    \n*   / : divide\n    \n*   * : multiply\n    \n*   % : modulo (Kamailio uses 'mod' instead of '%')\n    \n*   | : bitwise OR\n    \n*   \u0026 : bitwise AND\n    \n*   ^ : bitwise XOR\n    \n*   ~ : bitwise NOT\n    \n*   \u003c\u003c : bitwise left shift\n    \n*   \u003e\u003e : bitwise right shift\n    \n\nExample:\n\n$var(a) = 4 + ( 7 \u0026 ( ~2 ) );\n\nNOTE: to ensure the priority of operands in expression evaluations do use _parenthesis_.\n\nArithmetic expressions can be used in condition expressions.\n\nif( $var(a) \u0026 4 )\n    log(\"var a has third bit setn\");\n\n## Operators\n\n1.  type casts operators: (int), (str).\n    \n2.  string comparison: eq, ne\n    \n3.  integer comparison: ieq, ine\n    \n\nNote: The names are not yet final (use them at your own risk). Future version might use ==/!= only for ints (ieq/ine) and eq/ne for strings (under debate). They are almost equivalent to == or !=, but they force the conversion of their operands (eq to string and ieq to int), allowing among other things better type checking on startup and more optimizations.\n\nNon equiv. examples:\n\n0 == “” (true) is not equivalent to 0 eq “” (false: it evaluates to “0” eq “”).\n\n“a” ieq “b” (true: (int)“a” is 0 and (int)“b” is 0) is not equivalent to “a” == “b” (false).\n\nNote: internally == and != are converted on startup to eq/ne/ieq/ine whenever possible (both operand types can be safely determined at start time and they are the same).\n\n1.  Kamailio tries to guess what the user wanted when operators that support multiple types are used on different typed operands. In general convert the right operand to the type of the left operand and then perform the operation. Exception: the left operand is undef. This applies to the following operators: +, == and !=.\n    \n\nSpecial case: undef as left operand:\n\n   For +: undef + expr -\u003e undef is converted to string =\u003e \"\" + expr.\n   For == and !=:   undef == expr -\u003e undef is converted to type_of expr.\n   If expr is undef, then undef == undef is true (internally is converted\n   to string).\n\n1.  expression evaluation changes: Kamailio will auto-convert to integer or string in function of the operators:\n    \n\nint(undef)==0, int(“”)==0, int(“123”)==123, int(“abc”)==0\n\n     str(undef)==\"\", str(123)==\"123\".\n\n1.  script operators for dealing with empty/undefined variables\n    \n\ndefined expr - returns true if expr is defined, and false if not.\n\n                   Note: only a standalone avp or pvar can be\n                   undefined, everything else is defined.\n    strlen(expr) - returns the lenght of expr evaluated as string.\n    strempty(expr) - returns true if expr evaluates to the empty\n                     string (equivalent to expr==\"\").\n    Example: if (defined $v \u0026\u0026 !strempty($v)) $len=strlen($v);"
+    },
+    {
+      "name": "shm_mem_size",
+      "documentation": "Set shared memory size (in Mb).\n\nshm_mem_size = 64 (default 64)"
+    },
+    {
+      "name": "wait_worker1_mode",
+      "documentation": "Enable waiting for child SIP worker one to complete initialization, then create the other child worker processes.\n\nDefault: 0 (do not wait for child worker one to complete initialization).\n\nExample:\n\nwait_worker1_mode = 1"
+    },
+    {
+      "name": "tcp_linger2",
+      "documentation": "Lifetime of orphaned sockets in FIN_WAIT2 state (overrides tcp_fin_timeout on, see linux tcp(7) TCP_LINGER2). Linux only.\n\ntcp_linger2 = seconds (not set by default)"
+    },
+    {
+      "name": "define",
+      "documentation": "Control in C-style what parts of the config file are executed. The parts in non-defined zones are not loaded, ensuring lower memory usage and faster execution.\n\nAvailable directives:\n\n*   **#!define NAME** - define a keyword\n    \n*   **#!define NAME VALUE** - define a keyword with value\n    \n*   **#!ifdef NAME** - check if a keyword is defined\n    \n*   **#!ifndef** - check if a keyword is not defined\n    \n*   **#!else** - switch to false branch of ifdef/ifndef region\n    \n*   **#!endif** - end ifdef/ifndef region\n    \n*   **#!trydef** - add a define if not already defined\n    \n*   **#!redefine** - force redefinition even if already defined\n    \n\nPredefined keywords:\n\n*   **KAMAILIO_X[_Y[_Z]]** - Kamailio versions\n    \n*   **MOD_X** - when module X has been loaded\n    \n\nSee 'kamctl core.ppdefines_full' for full list.\n\nAmong benefits:\n\n*   easy way to enable/disable features (e.g., see default cfg – controlling support of nat traversal, presence, etc…)\n    \n*   switch control for parts where conditional statements were not possible (e.g., global parameters, module settings)\n    \n*   faster by not using conditional statements inside routing blocks when switching between running environments\n    \n\nExample: how to make config to be used in two environments, say testbed and production, controlled just by one define to switch between the two modes:\n\n...\n \n#!define TESTBED_MODE\n \n#!ifdef TESTBED_MODE\n  debug=5\n  log_stderror=yes\n  listen=192.168.1.1\n#!else\n  debug=2\n  log_stderror=no\n  listen=10.0.0.1\n#!endif\n \n...\n \n#!ifdef TESTBED_MODE\nmodparam(\"acc|auth_db|usrloc\", \"db_url\",\n\t\"mysql://kamailio:kamailiorw@localhost/kamailio_testbed\")\n#!else\nmodparam(\"acc|auth_db|usrloc\", \"db_url\",\n\t\"mysql://kamailio:kamailiorw@10.0.0.2/kamailio_production\")\n#!endif\n \n...\n \n#!ifdef TESTBED_MODE\nroute[DEBUG] {\n  xlog(\"SCRIPT: SIP $rm from: $fu to: $ru - srcip: $si\"n);\n}\n#!endif\n \n...\n \nroute {\n#!ifdef TESTBED_MODE\n  route(DEBUG);\n#!endif\n \n  ...\n}\n \n...\n\n*   you can define values for IDs\n    \n\n#!define MYINT 123\n#!define MYSTR \"xyz\"\n\n*   defined IDs are replaced at startup, during config parsing, e.g.,:\n    \n\n$var(x) = 100 + MYINT;\n\n*   is interpreted as:\n    \n\n$var(x) = 100 + 123;\n\n*   you can have multi-line defined IDs\n    \n\n#!define IDLOOP $var(i) = 0; \n                while($var(i)\u003c5) { \n                    xlog(\"++++ $var(i)n\"); \n                    $var(i) = $var(i) + 1; \n                }\n\n*   then in routing block\n    \n\nroute {\n    ...\n    IDLOOP\n    ...\n}\n\n*   number of allowed defines is now set to 256\n    \n\n*   notes:\n    \n    *   multilines defines are reduced to single line, so line counter should be fine\n        \n    *   column counter goes inside the define value, but you have to omit the '' and CR for the accurate inside-define position\n        \n    *   text on the same line as the directive will cause problems. Keep the directive lines clean and only comment on a line before or after."
+    },
+    {
+      "name": "WS",
+      "documentation": "This keyword can be used to test the value of 'proto' and check whether the SIP packet was received over WS or not.\n\nExample of usage:\n\n  if(proto==WS)\n  {\n      [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"the SIP message was received over WSn\");\n  };"
+    },
+    {
+      "name": "check_via",
+      "documentation": "Check if the address in top most via of replies is local. Default value is 0 (check disabled).\n\nExample of usage:\n\n  check_via=1"
+    },
+    {
+      "name": "add_rport",
+      "documentation": "Alias for force_rport();"
+    },
+    {
+      "name": "INET6",
+      "documentation": "This keyword can be used to test whether the SIP packet was received over an IPv6 connection.\n\nExample of usage:\n\n  if(af==INET6)\n  {\n      [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"the SIP message was received over IPv6n\");\n  };"
+    },
+    {
+      "name": "dst_blocklist_gc_interval",
+      "documentation": "How often the garbage collection will run (eliminating old, expired entries).\n\ndst_blocklist_gc_interval = time in s (default 60 s)"
+    },
+    {
+      "name": "to_uri",
+      "documentation": "This variable can be used to test the value of URI from To header.\n\nExample of usage:\n\n  if(to_uri=~\"sip:.+@kamailio.org\")\n  {\n      [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"this is a request for kamailio.org usersn\");\n  };"
+    },
+    {
+      "name": "pv_cache_action",
+      "documentation": "Specify what action to be done when the size of pv cache is exceeded. If 0, print an warning log message when the limit is exceeded. If 1, warning log messages is printed and the cache systems tries to drop a $sht(…) declaration. Default is 0.\n\npv_cache_action=1"
+    },
+    {
+      "name": "server_header",
+      "documentation": "Set the value of Server header for replies generated by Kamailio. It must contain the header name, but not the ending CRLF.\n\nExample of usage:\n\nserver_header=\"Server: My Super SIP Server\""
+    },
+    {
+      "name": "tcp_rd_buf_size",
+      "documentation": "Buffer size used for tcp reads. A high buffer size increases performance on server with few connections and lot of traffic on them, but also increases memory consumption (so for lots of connection is better to use a low value). Note also that this value limits the maximum message size (SIP, HTTP) that can be received over tcp.\n\nThe value is internally limited to 16MByte, for higher values recompile Kamailio with higher limit in tcp_options.c (search for “rd_buf_size” and 16777216). Further, you may need to increase the private memory, and if you process the message stateful you may also have to increase the shared memory.\n\nDefault: 4096, can be changed at runtime.\n\ntcp_rd_buf_size=65536"
+    },
+    {
+      "name": "sctp_socket_rcvbuf",
+      "documentation": "Size for the sctp socket receive buffer\n\n**Alias name: sctp_socket_receive_buffer**\n\nsctp_socket_rcvbuf = number"
+    },
+    {
+      "name": "sctp_sack_freq",
+      "documentation": "Number of packets received before an ACK is sent (without waiting for the sack_delay to expire). Default: OS specific.\n\nNote: on linux with lksctp up to and including 1.0.9 is not possible to set this value (having it in the config will produce a warning on startup).\n\nCan be changed at runtime (sctp sack_freq) but it will affect only new associations.\n\nsctp_sack_freq = number"
+    },
+    {
+      "name": "snd_port",
+      "documentation": ""
+    },
+    {
+      "name": "mcast_loopback",
+      "documentation": "It can be 'yes' or 'no'. If set to 'yes', multicast datagram are sent over loopback. Default value is 'no'.\n\nExample of usage:\n\n  mcast_loopback=yes"
+    },
+    {
+      "name": "pv_buffer_slots",
+      "documentation": "The number of internal buffer slots to print dynamic strings with pseudo-variables inside. The default value is 10.\n\nExample of usage:\n\npv_buffer_slots=12"
+    },
+    {
+      "name": "set_advertised_address",
+      "documentation": "Same as 'advertised_address' but it affects only the current message. It has priority if 'advertised_address' is also set.\n\nExample of usage:\n\n  set_advertised_address(\"kamailio.org\");"
+    },
+    {
+      "name": "request_route",
+      "documentation": "Request routing block - is executed for each SIP request.\n\nIt contains a set of actions to be executed for SIP requests received from the network. It is the equivalent of *main()* function for handling the SIP requests.\n\nFor backward compatibility reasons, the main request 'route' block can be identified by 'route{…}' or 'route[0]{…}'.\n\nThe implicit action after execution of the main route block is to drop the SIP request. To send a reply or forward the request, explicit actions (e.g., sl_send_reply(), forward(), t_relay()) must be called inside the route block.\n\nExample of usage:\n\n    request_route {\n         if(is_method(\"OPTIONS\")) {\n            # send reply for each options request\n            sl_send_reply(\"200\", \"ok\");\n            [exit](http://www.opengroup.org/onlinepubs/009695399/functions/exit.html)();\n         }\n         route(FWD);\n    }\n    route[FWD] {\n         # forward according to uri\n         forward();\n    }"
+    },
+    {
+      "name": "snd_af",
+      "documentation": ""
+    },
+    {
+      "name": "xavp_via_fields",
+      "documentation": "Set the name of xavp from where to take Via header field: address and port. Use them to build local Via header.\n\nExample:\n\nxavp_via_fields=\"customvia\"\n \nrequest_route {\n  ...\n  $xavp(customvia=\u003eaddress) = \"1.2.3.4\";\n  $xavp(customvia=\u003eport) = \"5080\";  # must be string\n  via_use_xavp_fields(\"1\");\n  t_relay();\n}\n\nSee function _via_use_xavp_fields()_ from “corex” module.\n\n## DNS Parameters\n\nNote: See also file doc/tutorials/dns.txt for details about Kamailio's DNS client.\n\nKamailio has an internal DNS resolver with caching capabilities. If this caching resolver is activated (default setting) then the system's stub resolver won't be used. Thus, also local name resolution configuration like /etc/hosts entries will not be used. If the DNS cache is deactivated (use_dns_cache=no), then system's resolver will be used. The DNS failover functionality in the tm module references directly records in the DNS cache (which saves a lot of memory) and hence DNS based failover only works if the internal DNS cache is enabled.\n\n| DNS resolver comparison | internal resolver | system resolver |\n| --- | --- | --- |\n| Caching of resolved records | yes | no* |\n| NAPTR/SRV lookups with correct weighting | yes | yes |\n| DNS based failover | yes | no  |\n\n* Of course you can use the resolving name servers configured in /etc/resolv.conf as caching nameservers.\n\nIf the internal resolver/cache is enabled you can add/remove records by hand (using kamcmd or xmlrpc) using the DNS RPCs, e.g. dns.add_a, dns.add_srv, dns.delete_a a.s.o. For more info on DNS RPCs see [http://www.kamailio.org/docs/docbooks/devel/rpc_list/rpc_list.html#dns.add_a](http://www.kamailio.org/docs/docbooks/devel/rpc_list/rpc_list.html#dns.add_a \"http://www.kamailio.org/docs/docbooks/devel/rpc_list/rpc_list.html#dns.add_a\")\n\nNote: During startup of Kamailio, before the internal resolver is loaded, the system resolver will be used (it will be used for queries done from module register functions or modparams fixups, but not for queries done from mod_init() or normal fixups).\n\nNote: The dns cache uses the DNS servers configured on your server (/etc/resolv.conf), therefore even if you use the internal resolver you should have a working DNS resolving configuration on your server.\n\nKamailio also allows you to finetune the DNS resolver settings.\n\nThe maximum time a dns request can take (before failing) is (if dns_try_ipv6 is yes, multiply it again by 2; if SRV and NAPTR lookups are enabled, it can take even longer!):\n\n(dns_retr_time*(dns_retr_no+1)*dns_servers_no)*(search_list_domains)\n\nNote: During DNS lookups, the process which performs the DNS lookup blocks. To minimize the blocked time the following parameters can be used (max 2s):\n\ndns_try_ipv6=no\ndns_retr_time=1\ndns_retr_no=1\ndns_use_search_list=no"
+    },
+    {
+      "name": "tcp_keepalive",
+      "documentation": "Enables keepalive for tcp (sets SO_KEEPALIVE socket option)\n\ntcp_keepalive = yes | no (default yes)"
+    },
+    {
+      "name": "return",
+      "documentation": "The return() function allows you to return any integer value from a called route() block. You can test the value returned by a route using [$retcode](https://www.kamailio.org/wiki/cookbooks/devel/devel#retcode \"cookbooks:devel:devel\") or $? variable.\n\nreturn(0) is same as [exit()](https://www.kamailio.org/wiki/cookbooks/devel/devel#exit \"cookbooks:devel:devel\");\n\nIn bool expressions:\n\n*   Negative is FALSE\n    \n*   Positive is TRUE\n    \n\nIf no value is specified, or a route reaches its end without executing a return statement, it returns 1. If return is used in the top level route is equivalent with exit [val].\n\nExample usage:\n\nroute {\n  if (route(2)) {\n    xlog(\"L_NOTICE\",\"method $rm is INVITEn\");\n  } else {\n    xlog(\"L_NOTICE\",\"method $rm is REGISTERn\");\n  };\n}\n\nroute[2] {\n  if (is_method(\"INVITE\")) {\n    return(1);\n  } else if (is_method(\"REGISTER\")) {\n    return(-1);\n  } else {\n    return(0);\n  };\n}\n\nSee also the FAQ for how the function return code is evaluated:\n\n*   [https://www.kamailio.org/wiki/tutorials/faq/main#how_is_the_function_return_cod](https://www.kamailio.org/wiki/tutorials/faq/main#how_is_the_function_return_cod \"https://www.kamailio.org/wiki/tutorials/faq/main#how_is_the_function_return_cod\")"
+    },
+    {
+      "name": "to_port",
+      "documentation": ""
+    },
+    {
+      "name": "user_agent_header",
+      "documentation": "Set the value of User-Agent header for requests generated by Kamailio. It must contain header name as well, but not the ending CRLF.\n\nuser_agent_header=\"User-Agent: My Super SIP Server\""
+    },
+    {
+      "name": "dns_use_search_list",
+      "documentation": "Can be 'yes' or 'no'. If set to 'no', the search list in '/etc/resolv.conf' will be ignored (⇒ fewer lookups ⇒ gives up faster). Default value is 'yes'.\n\nHINT: even if you don't have a search list defined, setting this option to 'no' will still be “faster”, because an empty search list is in fact search “” (so even if the search list is empty/missing there will still be 2 dns queries, eg. foo+'.' and foo+“”+'.')\n\nExample of usage:\n\n  dns_use_search_list=no"
+    },
+    {
+      "name": "tcp_accept_unique",
+      "documentation": "If set to 1, reject duplicate connections coming from same source IP and port.\n\nDefault set to 0.\n\ntcp_accept_unique = 1"
+    },
+    {
+      "name": "subst",
+      "documentation": "*   perform substitutions inside the strings of config (note that define is replacing only IDs - alphanumeric tokens not enclosed in quotes)\n    \n*   #!subst offers an easy way to search and replace inside strings before cfg parsing. E.g.,:\n    \n\n#!subst \"/regexp/subst/flags\"\n\n*   flags is optional and can be: 'i' - ignore case; 'g' - global replacement\n    \n\nExample:\n\n#!subst \"/DBPASSWD/xyz/\"\nmodparam(\"acc\", \"db_url\", \"mysql://user:DBPASSWD@localhost/db\")\n\n*   will do the substitution of db password in db_url parameter value"
+    },
+    {
+      "name": "listen",
+      "documentation": "Set the network addresses the SIP server should listen to. It can be an IP address, hostname or network interface id or combination of protocol:address:port (e.g., udp:10.10.10.10:5060). This parameter can be set multiple times in same configuration file, the server listening on all addresses specified.\n\nExample of usage:\n\n    listen=10.10.10.10\n    listen=eth1:5062\n    listen=udp:10.10.10.10:5064\n\nIf you omit this directive then the SIP server will listen on all interfaces. On start the SIP server reports all the interfaces that it is listening on. Even if you specify only UDP interfaces here, the server will start the TCP engine too. If you don't want this, you need to disable the TCP support completely with the core parameter disable_tcp.\n\nIf you specify IPv6 addresses, you should put them into square brackets, e.g.:\n\n    listen=udp:[2a02:1850:1:1::18]:5060\n\nYou can specify an advertise address (like ip:port) per listening socket - it will be used to build headers such as Via and Record-Route:\n\n    listen=udp:10.10.10.10:5060 advertise 11.11.11.11:5060\n\nThe advertise address must be the format 'address:port', the protocol is taken from the bind socket. The advertise address is a convenient alternative to advertised_address / advertised_port cfg parameters or set_advertised_address() / set_advertised_port() cfg functions.\n\nA typical use case for advertise address is when running SIP server behind a NAT/Firewall, when the local IP address (to be used for bind) is different than the public IP address (to be used for advertising).\n\nA unique name can be set for sockets to simplify the selection of the socket for sending out. For example, the rr and path modules can use the socket name to advertise it in header URI parameter and use it as a shortcut to select the corresponding socket for routing subsequent requests.\n\nThe name has to be provided as a string enclosed in between quotes after the **name** identifier.\n\n    listen=udp:10.0.0.10:5060 name \"s1\"\n    listen=udp:10.10.10.10:5060 advertise 11.11.11.11:5060 name \"s2\"\n    listen=udp:10.10.10.20:5060 advertise \"mysipdomain.com\" name \"s3\"\n    listen=udp:10.10.10.30:5060 advertise \"mysipdomain.com\" name \"s4\"\n    ...\n    $fsn = \"s4\";\n    t_relay();\n\nNote that there is no internal check for uniqueness of the socket names, the admin has to ensure it in order to be sure the desired socket is selected, otherwise the first socket with a matching name is used.\n\nAs of 5.6, there is now a **virtual** identifier which can be added to the end of each listen directive. This can be used in combination with any other identifier, but must be added at the end of the line.\n\n    listen=udp:10.1.1.1:5060 virtual\n    listen=udp:10.0.0.10:5060 name \"s1\" virtual\n    listen=udp:10.10.10.10:5060 advertise 11.11.11.11:5060 virtual\n    listen=udp:10.10.10.20:5060 advertise \"mysipdomain.com\" name \"s3\" virtual\n\nThe **virtual** identifier is meant for use in situations where you have a floating/virtual IP address on your system that may not always be active on the system. It is particularly useful for active/active virtual IP situations, where otherwise things like usrloc PATH support can break due to incorrect “check_self” results.\n\nThis identifier will change the behaviour of how “myself”, “is_myself” or “check_self” matches against traffic destined to this IP address. By default, Kamailio always considers traffic destined to a listen IP as “local” regardless of if the IP is currently locally active. With this flag set, Kamailio will do an extra check to make sure the IP is currently a local IP address before considering the traffic as local.\n\nThis means that if Kamailio is listening on an IP that is not currently local, it will recognise that, and can relay the traffic to another Kamailio node as needed, instead of thinking it always needs to handle the traffic."
+    },
+    {
+      "name": "log_name",
+      "documentation": "Allows to configure a log_name prefix which will be used when printing to syslog – it is also known as syslog tag, and the default value is the application name or full path that printed the log message. This is useful to filter log messages when running many instances of Kamailio on same server.\n\nlog_name=\"kamailio-proxy-5080\""
+    },
+    {
+      "name": "udp_mtu_try_proto",
+      "documentation": "If udp_mtu !=0 and udp forwarded request size (after adding all the “local” headers) \u003e udp_mtu, use this protocol instead of udp. Only the Via header will be updated (e.g. The Record-Route will be the one built for udp).\n\n**Warning:** Although RFC3261 mandates automatic transport protocol changing, enabling this feature can lead to problems with clients which do not support other protocols or are behind a firewall or NAT. Use this only when you know what you do!\n\nSee also udp_mtu_try_proto(proto) function.\n\nDefault: UDP (off). Recommended: TCP.\n\nudp_mtu_try_proto = TCP|TLS|SCTP|UDP"
+    },
+    {
+      "name": "udp4_raw",
+      "documentation": "Enables raw socket support for sending UDP IPv4 datagrams (40-50% performance increase on linux multi-cpu).\n\nPossible values: 0 - disabled (default), 1 - enabled, -1 auto.\n\nIn “auto” mode it will be enabled if possible (sr started as root or with CAP_NET_RAW). udp4_raw can be used on Linux and FreeBSD. For other BSDs and Darwin one must compile with -DUSE_RAW_SOCKS. On Linux one should also set udp4_raw_mtu if the MTU on any network interface that could be used for sending is smaller then 1500.\n\nThe parameter can be set at runtime as long as sr was started with enough privileges (core.udp4_raw).\n\nudp4_raw = on"
+    },
+    {
+      "name": "status",
+      "documentation": "If used in onreply_route, this variable is a referece to the status code of the reply. If it used in a standard route block, the variable is a reference to the status of the last reply sent out for the current request.\n\nExample of usage:\n\n    if(status==\"200\")\n    {\n        [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"this is a 200 OK replyn\");\n    };"
+    },
+    {
+      "name": "include_file",
+      "documentation": "include_file \"path_to_file\"\n\nInclude the content of the file in config before parsing. path_to_file must be a static string. Including file operation is done at startup. If you change the content of included file, you have to restart the SIP server to become effective.\n\nThe path_to_file can be relative or absolute. If it is not absolute path, first attempt is to locate it relative to current directory, and if fails, relative to directory of the file that includes it. There is no restriction where include can be used or what can contain - any part of config file is ok. There is a limit of maximum 10 includes in depth, otherwise you can use as many includes as you want. Reporting of the cfg file syntax errors prints now the file name for easier troubleshooting.\n\nIf the included file is not found, the config file parser throws error. You can find this error message at the logging destination, usually in the system logging (file).\n\nYou can use also the syntax **#!include_file** or **!!include_file**.\n\nExample of usage:\n\nroute {\n    ...\n    include_file \"/sr/checks.cfg\"\n    ...\n}\n \n--- /sr/checks.cfg ---\n \n   if (!mf_process_maxfwd_header(\"10\")) {\n       sl_send_reply(\"483\",\"Too Many Hops\");\n       [exit](http://www.opengroup.org/onlinepubs/009695399/functions/exit.html);\n   }\n \n---"
+    },
+    {
+      "name": "async_nonblock",
+      "documentation": "Set the non-block mode for the internal sockets used by default group of async workers.\n\nDefault: 0\n\nExample:\n\n    async_nonblock=1"
+    },
+    {
+      "name": "tcp_keepidle",
+      "documentation": "Time before starting to send keepalives, if the connection is idle (TCP_KEEPIDLE socket option). Linux only.\n\ntcp_keepidle  = seconds (not set by default)"
+    },
+    {
+      "name": "while",
+      "documentation": "while statement\n\nExample of usage:\n\n  \n  $var(i) = 0;\n  while($var(i) \u003c 10)\n  {\n      xlog(\"counter: $var(i)n\");\n      $var(i) = $var(i) + 1;\n  }\n\n## Script Operations\n\nAssignments together with string and arithmetic operations can be done directly in configuration file."
+    },
+    {
+      "name": "trydefenvns",
+      "documentation": "Similar to **#!trydefenv**, but the value is defined in between double quotes to make it convenient to be used as a string token.\n\n#!trydefenvs ENVVAR\n#!trydefenvs ID=ENVVAR\n\n## Core Keywords\n\nKeywords specific to SIP messages which can be used mainly in `if` expressions."
+    },
+    {
+      "name": "exit_timeout",
+      "documentation": "**Alias name: ser_kill_timeout**\n\nHow much time Kamailio will wait for all the shutdown procedures to complete. If this time is exceeded, all the remaining processes are immediately killed and Kamailio exits immediately (it might also generate a core dump if the cleanup part takes too long).\n\nDefault: 60 s. Use 0 to disable.\n\n exit_timeout = seconds"
+    },
+    {
+      "name": "tcp_fd_cache",
+      "documentation": "If enabled FDs used for sending will be cached inside the process calling tcp_send (performance increase for sending over tcp at the cost of slightly slower connection closing and extra FDs kept open)\n\ntcp_fd_cache = yes | no (default yes)"
+    },
+    {
+      "name": "sctp_max_burst",
+      "documentation": "Maximum burst of packets that can be emitted by an association. Default: OS specific.\n\nCan be changed at runtime (sctp max_burst) but it will affect only new associations.\n\nsctp_max_burst = number\n\n## UDP Parameters"
+    },
+    {
+      "name": "selval",
+      "documentation": "Select a value based on conditional expression.\n\nPrototype:\n\nselval(evalexpr, valexp1, valexpr2)\n\nThis is a core statement that return the 2nd parameter if the 1st parameter is evaluated to true, or 3rd parameter if the 1st parameter is evaluated to false. It can be considered a core function that is equivalent of ternary condition/operator\n\nExample:\n\n$var(x) = selval($Ts mod 2, \"true/\" + $ru, \"false/\" + $rd);\n\nThe first parameter is a conditional expression, like those used for IF, the 2nd and 3rd parameters can be expressions like those used in the right side of assignments."
+    },
+    {
+      "name": "strip",
+      "documentation": "Strip the first N-th characters from username of R-URI (N is the value of the parameter).\n\nExample of usage:\n\n  strip(3);"
+    },
+    {
+      "name": "import_file",
+      "documentation": "import_file \"path_to_file\"\n\nSimilar to **include_file**, but does not throw error if the included file is not found."
+    },
+    {
+      "name": "myself",
+      "documentation": "This is a reference to the list of local IP addresses, hostnames and aliases that has been set in the Kamailio configuration file. This lists contain the domains served by Kamailio.\n\nThe variable can be used to test if the host part of an URI is in the list. The usefulness of this test is to select the messages that has to be processed locally or has to be forwarded to another server.\n\nSee “alias” to add hostnames,IP addresses and aliases to the list.\n\nExample of usage:\n\n    if(uri==myself) {\n        [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"the request is for local processingn\");\n    };\n\nNote: You can also use the is_myself() function.\n\n## Core parameters"
+    },
+    {
+      "name": "dns_cache_gc_interval",
+      "documentation": "Interval in seconds after which the dns cache is garbage collected (default: 120 s)\n\ndns_cache_gc_interval = number"
+    },
+    {
+      "name": "tcp_connect_timeout",
+      "documentation": "Time in seconds before an ongoing attempt to establish a new TCP connection will be aborted. Lower this value for faster detection of TCP connection problems. The default value is 10s.\n\nExample of usage:\n\n  tcp_connect_timeout=5"
+    },
+    {
+      "name": "tcp_syncnt",
+      "documentation": "Number of SYN retransmissions before aborting a connect attempt (see linux tcp(7) TCP_SYNCNT). Linux only.\n\ntcp_syncnt = number of syn retr. (default not set)"
+    },
+    {
+      "name": "sctp_srto_max",
+      "documentation": "Maximum value of the retransmission timeout (RTO) (default: OS specific).\n\nWARNING: values lower then the sctp sack_delay will cause lots of retransmissions and connection instability (see sctp_srto_min for more details).\n\nCan be changed at runtime (sctp srto_max) but it will affect only new associations.\n\nsctp_srto_max = milliseconds"
+    },
+    {
+      "name": "rt_policy",
+      "documentation": "Real time scheduling policy, 0 = SCHED_OTHER, 1= SCHED_RR and 2=SCHED_FIFO\n\nrt_policy= \u003c0..3\u003e (default 0)"
+    },
+    {
+      "name": "setflag",
+      "documentation": "Set a flag for current processed message. The value of the parameter can be in range of 0..31. The flags are used to mark the message for special processing (e.g., accounting) or to keep some state (e.g., message authenticated).\n\nFor more see: [https://www.kamailio.org/wiki/tutorials/kamailio-flag-operations](https://www.kamailio.org/wiki/tutorials/kamailio-flag-operations \"https://www.kamailio.org/wiki/tutorials/kamailio-flag-operations\") .\n\nExample of usage:\n\n  setflag(3);"
+    },
+    {
+      "name": "proto",
+      "documentation": "This variable can be used to test the transport protocol of the SIP message.\n\nExample of usage:\n\n    if(proto==UDP)\n    {\n        [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"SIP message received over UDPn\");\n    };"
+    },
+    {
+      "name": "sctp_socket_sndbuf",
+      "documentation": "Size for the sctp socket send buffer\n\n**Alias name: sctp_socket_send_buffer**\n\nsctp_socket_sndbuf = number"
+    },
+    {
+      "name": "exit",
+      "documentation": "Stop the execution of the configuration script – it has the same behaviour as return(0). It does not affect the implicit action to be taken after script execution.\n\nroute {\n  if (route(2)) {\n    xlog(\"L_NOTICE\",\"method $rm is INVITEn\");\n  } else {\n    xlog(\"L_NOTICE\",\"method is $rmn\");\n  };\n}\n\nroute[2] {\n  if (is_method(\"INVITE\")) {\n    return(1);\n  } else if (is_method(\"REGISTER\")) {\n    return(-1);\n  } else if (is_method(\"MESSAGE\")) {\n    sl_send_reply(\"403\",\"IM not allowed\");\n    exit;\n  };\n}"
+    },
+    {
+      "name": "rewritehostport",
+      "documentation": "**Alias name: sethostport, sethp**\n\nRewrite the domain part and port of the R-URI with the value of function's parameter. Other parts of the R-URI like username and URI parameters remain unchanged.\n\nExample of usage:\n\n  rewritehostport(\"1.2.3.4:5080\");"
+    },
+    {
+      "name": "SCTP",
+      "documentation": "This keyword can be used to test the value of 'proto' and check whether the SIP packet was received over SCTP or not.\n\nExample of usage:\n\n  if(proto==SCTP)\n  {\n      [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"the SIP message was received over SCTPn\");\n  };"
+    },
+    {
+      "name": "http_reply_parse",
+      "documentation": "Alias: http_reply_hack\n\nWhen enabled, Kamailio can parse HTTP replies, but does so by treating them as SIP replies. When not enabled HTTP replies cannot be parsed. This was previously a compile-time option, now it is run-time.\n\nDefault value is 'no'.\n\nExample of usage:\n\nhttp_reply_parse=yes"
+    },
+    {
+      "name": "mcast_ttl",
+      "documentation": "Set the value for multicast ttl. Default value is OS specific (usually 1).\n\nExample of usage:\n\n  mcast_ttl=32"
+    },
+    {
+      "name": "udp_mtu",
+      "documentation": "Fallback to another protocol (udp_mtu_try_proto must be set also either globally or per packet) if the constructed request size is greater then udp_mtu.\n\nRFC 3261 specified size: 1300. Default: 0 (off).\n\nudp_mtu = number"
+    },
+    {
+      "name": "tcp_keepcnt",
+      "documentation": "Number of keepalives sent before dropping the connection (TCP_KEEPCNT socket option). Linux only.\n\ntcp_keepcnt = number (not set by default)"
+    },
+    {
+      "name": "set_reply_close",
+      "documentation": "Like set_reply_no_connect, but closes the TCP connection after sending. Can be used in same route blocks as set_reply_no_connect.\n\nExample of usage:\n\n  route {\n    ...\n    if (...caller-is-not-registered...) {\n      // reject unregistered client\n      // if request was received via TCP/TLS close the connection, as\n      // this may trigger re-registration of the client.\n      set_reply_close();\n      sl_send_reply(\"403\",\"REGISTER first\");\n      exit;\n    }\n    ...\n  }"
+    },
+    {
+      "name": "disable_tcp",
+      "documentation": "Global parameter to disable TCP support in the SIP server. Default value is 'no'.\n\nExample of usage:\n\n  disable_tcp=yes"
+    },
+    {
+      "name": "onsend_route_reply",
+      "documentation": "If set to 1 (yes, on), onsend_route block is executed for received replies that are sent out. Default is 0.\n\n  onsend_route_reply=yes"
+    },
+    {
+      "name": "pv_buffer_size",
+      "documentation": "The size in bytes of internal buffer to print dynamic strings with pseudo-variables inside. The default value is 8192 (8kB). Please keep in mind that for xlog messages, there is a dedicated module parameter to set the internal buffer size.\n\nExample of usage:\n\npv_buffer_size=2048"
+    },
+    {
+      "name": "server_id",
+      "documentation": "A configurable unique server id that can be used to discriminate server instances within a cluster of servers when all other information, such as IP addresses are the same.\n\n  server_id = number"
+    },
+    {
+      "name": "modparam",
+      "documentation": "The modparam command will be used to set the options of the modules.\n\nExample:\n\nmodparam(\"usrloc\", \"db_mode\", 2)\nmodparam(\"usrloc\", \"nat_bflag\", 6)\n\nSee the documenation of the respective module to find out the available options."
+    },
+    {
+      "name": "shm_force_alloc",
+      "documentation": "Tries to pre-fault all the shared memory, before starting. When “on”, start time will increase, but combined with mlock_pages will guarantee Kamailio will get all its memory from the beginning (no more kswapd slow downs)\n\nshm_force_alloc = yes | no (default no)"
+    },
+    {
+      "name": "sctp_autoclose",
+      "documentation": "Number of seconds before autoclosing an idle association (default: 180 s). Can be changed at runtime, but it will affect only new associations. E.g.:\n\n$ kamcmd cfg.set_now_int sctp autoclose 120\n\nsctp_autoclose = seconds"
+    },
+    {
+      "name": "sctp_max_assocs",
+      "documentation": "Maximum number of allowed open sctp associations. -1 means maximum allowed by the OS. Default: -1. Can be changed at runtime (e.g.: “kamcmd cfg.set_now_int sctp max_assocs 10”). When the maximum associations number is exceeded and a new associations is opened by a remote host, the association will be immediately closed. However it is possible that some SIP packets get through (especially if they are sent early, as part of the 4-way handshake).\n\nWhen Kamailio tries to open a new association and the max_assocs is exceeded the exact behaviour depends on whether or not sctp_assoc_tracking is on. If on, the send triggering the active open will gracefully fail, before actually opening the new association and no packet will be sent. However if sctp_assoc_tracking is off, the association will first be opened and then immediately closed. In general this means that the initial sip packet will be sent (as part of the 4-way handshake).\n\nsctp_max_assocs = number"
+    },
+    {
+      "name": "bind_ipv6_link_local",
+      "documentation": "If set to 1, try to bind also IPv6 link local addresses by discovering the scope of the interface. This apply for UDP socket for now, to be added for the other protocols. Default is 0.\n\nExample:\n\n    bind_ipv6_link_local=1"
+    },
+    {
+      "name": "loadmodulex",
+      "documentation": "Similar to **loadmodule** with the ability to evaluate variables in its parameter."
+    },
+    {
+      "name": "mem_status_mode",
+      "documentation": "If set to 1, memory status dump for qm allocator will print details about used fragments. If set to 0, the dump contains only free fragments. It can be set at runtime via cfg param framework (e.g., via kamcmd).\n\nDefault is 0.\n\nmem_status_mode=1"
+    },
+    {
+      "name": "modparamx",
+      "documentation": "Similar to **modparam**, with ability to evaluate the variables in its parameters."
+    },
+    {
+      "name": "dns_servers_no",
+      "documentation": "How many dns servers from the ones defined in '/etc/resolv.conf' will be used. Default value is to use all of them.\n\nExample of usage:\n\n  dns_servers_no=2"
+    },
+    {
+      "name": "use_dns_failover",
+      "documentation": "use_dns_failover = on | off (default off)\n\n## TCP Parameters\n\nThe following parameters allows to tweak the TCP behaviour."
+    },
+    {
+      "name": "udp4_raw_ttl",
+      "documentation": "TTL value used for UDP IPv4 packets when udp4_raw is enabled. By default it is set to auto mode (-1), meaning that the same TTL will be used as for normal UDP sockets.\n\nThe parameter can be set at runtime (core.udp4_raw_ttl).\n\n## Blocklist Parameters"
+    },
+    {
+      "name": "defenv",
+      "documentation": "Preprocessor directive to define an ID to the value of an environment variable with the name ENVVAR.\n\n#!defenv ID=ENVVAR\n\nIt can also be just **$!defenv ENVVAR** and the defined ID is the ENVVAR name.\n\nExample:\n\n#!defenv SHELL\n\nIf environment variable $SHELL is '/bin/bash', then it is like:\n\n#!define SHELL /bin/bash\n\nFull expression variant:\n\n#!defenv ENVSHELL=SHELL\n\nThen it is like:\n\n#!define ENVSHELL /bin/bash\n\nIt is a simplified alternative of using **#!substdef** with **$env(NAME)** in the replacement part."
+    },
+    {
+      "name": "fork_delay",
+      "documentation": "Number of usecs to wait before forking a process.\n\nDefault is 0 (don't wait).\n\nExample of usage:\n\nfork_delay=5000"
+    },
+    {
+      "name": "mcast",
+      "documentation": "This parameter can be used to set the interface that should join the multicast group. This is useful if you want to **listen** on a multicast address and don't want to depend on the kernel routing table for choosing an interface.\n\nThe parameter is reset after each **listen** parameter, so you can join the right multicast group on each interface without having to modify kernel routing beforehand.\n\nExample of usage:\n\n  mcast=\"eth1\"\n  listen=udp:224.0.1.75:5060"
+    },
+    {
+      "name": "break",
+      "documentation": "'break' statement can be used to end a 'case' block in a 'switch' statement or exit from a 'while' statement."
+    },
+    {
+      "name": "forward",
+      "documentation": "Forward the SIP request to destination stored in $du in stateless mode.\n\nExample of usage:\n\n  $du = \"sip:10.0.0.10:5060;transport=tcp\";\n  forward();"
+    },
+    {
+      "name": "from_uri",
+      "documentation": "This script variable is a reference to the URI of 'From' header. It can be used to test 'From'- header URI value.\n\nExample of usage:\n\n    if(is_method(\"INVITE\") \u0026\u0026 from_uri=~\".*@kamailio.org\")\n    {\n        [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"the caller is from kamailio.orgn\");\n    };"
+    },
+    {
+      "name": "async_workers_group",
+      "documentation": "Define groups of asynchronous worker processes.\n\nPrototype:\n\nasync_workers_group=\"name=X;workers=N;nonblock=[0|1];usleep=M\"\n\nThe attributes are:\n\n*   **name** - the group name (used by functions such as **sworker_task(name)**)\n    \n*   **workers** - the number of processes to create for this group\n    \n*   **nonblock** - set or not set the non-block flag for internal communication socket\n    \n*   **usleep** - the number of microseconds to sleep before trying to receive next task (can be useful if nonblock=1)\n    \n\nDefault: “”.\n\nExample:\n\n    async_workers_group=\"name=reg;workers=4;nonblock=0;usleep=0\"\n\nIf the **name** is default, then it overwrites the value set by **async_workers**.\n\nSee also **event_route[core:pre-routing]** and **sworker** module."
+    },
+    {
+      "name": "sip_warning (noisy feedback)",
+      "documentation": "Can be 0 or 1. If set to 1 (default value is 0) a 'Warning' header is added to each reply generated by Kamailio. The header contains several details that help troubleshooting using the network traffic dumps, but might reveal details of your network infrastructure and internal SIP routing.\n\nExample of usage:\n\n  sip_warning=0"
+    },
+    {
+      "name": "dns_retr_time",
+      "documentation": "Time in seconds before retrying a dns request. Default value is system specific, depends also on the '/etc/resolv.conf' content (usually 5s).\n\nExample of usage:\n\n  dns_retr_time=3"
+    },
+    {
+      "name": "tcp_max_connections",
+      "documentation": "Maximum number of tcp connections (if the number is exceeded no new tcp connections will be accepted). Default is defined in tcp_init.h: #define DEFAULT_TCP_MAX_CONNECTIONS 2048\n\nExample of usage:\n\n  tcp_max_connections=4096"
+    },
+    {
+      "name": "dst_port",
+      "documentation": "The local port where the SIP packet was received. When Kamailio is listening on many ports, it is useful to learn which was the one that received the SIP packet.\n\nExample of usage:\n\n   if(dst_port==5061)\n   {\n       [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"message was received on port 5061n\");\n   };"
+    },
+    {
+      "name": "TCP",
+      "documentation": "This keyword can be used to test the value of 'proto' and check whether the SIP packet was received over TCP or not.\n\nExample of usage:\n\n  if(proto==TCP)\n  {\n      [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"the SIP message was received over TCPn\");\n  };"
+    },
+    {
+      "name": "auto_bind_ipv6",
+      "documentation": "When turned on, Kamailio will automatically bind to all IPv6 addresses (much like the default behaviour for IPv4). Default is 0.\n\nExample:\n\n    auto_bind_ipv6=1"
+    },
+    {
+      "name": "sctp_children",
+      "documentation": "sctp children no (similar to udp children)\n\nsctp_children = number"
+    },
+    {
+      "name": "real_time",
+      "documentation": "Sets real time priority for all the Kamailio processes, or the timers (bitmask).\n\n   Possible values:   0  - off\n                      1  - the \"fast\" timer\n                      2  - the \"slow\" timer\n                      4  - all processes, except the timers\n   Example: real_time= 7 =\u003e everything switched to real time priority.\n\nreal_time = \u003cint\u003e (flags) (default off)"
+    },
+    {
+      "name": "set_reply_no_connect",
+      "documentation": "Like set_forward_no_connect(), but for replies to the current message (local generated replies and replies forwarded by tm). The behavior depends in which route block the function is called:\n\n*   normal request route: affects all replies sent back on the transaction (either local or forwarded) and all local stateless replies (sl_reply()).\n    \n\n*   onreply_route: affects the current reply (so the send_flags set in the onreply_route will be used if the reply for which they were set is the winning final reply or it's a provisional reply that is forwarded)\n    \n\n*   branch_route: ignored.\n    \n\n*   onsend_route: ignored\n    \n\nExample of usage:\n\n  route[4] {\n    //requests from local users. There are usually behind NAT so it does not make sense to try\n    //to establish a new TCP connection for the replies\n    set_reply_no_connect();\n    // do authentication and call routing\n    ...\n  }"
+    },
+    {
+      "name": "flags",
+      "documentation": "SIP message (transaction) flags can have string names. The _name_ for flags cannot be used for **branch** or **script flags**(*)\n\n...\nflags\n  FLAG_ONE   : 1,\n  FLAG_TWO   : 2;\n...\n\n(*) The named flags feature was propagated from the source code merge back in 2008 and is not extensively tested. The recommended way of defining flags is using [#!define](https://www.kamailio.org/wiki/cookbooks/5.2.x/core#define \"cookbooks:5.2.x:core\") (which is also valid for branch/script flags):\n\n#!define FLAG_NAME FLAG_BIT"
+    },
+    {
+      "name": "mem_safety",
+      "documentation": "If set to 1, memory free operation does not call abort() for double freeing a pointer or freeing an invalid address. The server still prints the alerting log messages. If set to 0, the SIP server stops by calling abort() to generate a core file.\n\nIt can be set via config reload framework.\n\nDefault is 1 (enabled).\n\nmem_safety=0"
+    },
+    {
+      "name": "statistics",
+      "documentation": "Kamailio has built-in support for statistics counter. This means, these counters can be increased, decreased, read and cleared. The statistics counter are defined either by the core (e.g. tcp counters), by modules (e.g. 2xx_transactions by “tmx” module) or by the script writer using the “statistics” module.\n\nThe statistics counters are read/updated either automatically by Kamailio internally (e.g. tcp counters), by the script writer via the module functions of the “statistics” module, by the script writer using the $stat() pseudo variable (read-only), or via MI commands.\n\nFollowing are some examples how to access statistics variables:\n\n**script**\n\nmodparam(\"statistics\", \"variable\", \"NOTIFY\")\n\n(if method == \"NOTIFY\") {\n  update_stat(\"NOTIFY\", \"+1\");\n}\n\nxlog(\"Number of received NOTIFYs: $stat(NOTIFY)\");\n\n**MI**\n\n# get counter value\nkamctl fifo get_statistics NOTIFY\n# set counter to zero\nkamctl fifo reset_statistics NOTIFY\n# get counter value and then set it to zero\nkamctl fifo clear_statistics NOTIFY\n\n# or use the kamcmd tool\nkamcmd mi get_statistics 1xx_replies"
+    },
+    {
+      "name": "uri_host_extra_chars",
+      "documentation": "Specify additional chars that should be allowed in the host part of URI.\n\nuri_host_extra_chars = \"_\""
+    },
+    {
+      "name": "dns_try_naptr",
+      "documentation": "Enable NAPTR support according to RFC 3263 (see doc/tutorials/dns.txt for more info)\n\n  \ndns_try_naptr = yes | no (default no)"
+    },
+    {
+      "name": "sctp_init_max_timeo",
+      "documentation": "Maximum INIT retransmission timeout (RTO max for INIT). Default: OS specific.\n\nCan be changed at runtime (sctp init_max_timeo).\n\nsctp_init_max_timeo = milliseconds"
+    },
+    {
+      "name": "dst_blocklist_init",
+      "documentation": "If off, the blocklist is not initialized at startup and cannot be enabled runtime, that saves some memory.\n\ndst_blocklist_init = on | off (default on)"
+    },
+    {
+      "name": "avpflags",
+      "documentation": ""
+    },
+    {
+      "name": "dns_retr_no",
+      "documentation": "Number of dns retransmissions before giving up. Default value is system specific, depends also on the '/etc/resolv.conf' content (usually 4).\n\nExample of usage:\n\n  dns_retr_no=3"
+    },
+    {
+      "name": "sctp_sack_delay",
+      "documentation": "Delay until an ACK is generated after receiving a packet. Default: OS specific.\n\nWARNING: a value higher then srto_min can cause a lot of retransmissions (and strange problems). A value higher then srto_max will result in very high connections instability. According to the standard the sack_delay value should be between 200 and 500 ms.\n\nCan be changed at runtime (sctp sack_delay) but it will affect only new associations.\n\nsctp_sack_delay = milliseconds"
+    },
+    {
+      "name": "rewriteport",
+      "documentation": "**Alias name: setport, setp**\n\nRewrites/sets the port part of the R-URI with the value of function's parameter.\n\nExample of usage:\n\n  rewriteport(\"5070\");"
+    },
+    {
+      "name": "strip_tail",
+      "documentation": "Strip the last N-th characters from username of R-URI (N is the value of the parameter).\n\nExample of usage:\n\nstrip_tail(3);"
+    },
+    {
+      "name": "latency_limit_db",
+      "documentation": "Limit of latency in us (micro-seconds) for db operations. If a db operation executed via DB API v1 takes longer that its value, a message is printed in the logs, showing the first 50 characters of the db query.\n\nDefault value is 0 (disabled).\n\nlatency_limit_db=500"
+    },
+    {
+      "name": "max_branches",
+      "documentation": "The maximum number of outgoing branches for each SIP request. It has impact on the size of destination set created in core (e.g., via append_branch()) as well as the serial and parallel forking done via tm module. It replaces the old defined constant MAX_BRANCHES.\n\nThe value has to be at least 1 and the upper limit is 31.\n\nDefault value: 12\n\nExample of usage:\n\nmax_branches=16"
+    },
+    {
+      "name": "stats_name_separator",
+      "documentation": "Specify the character used as a separator for the internal statistics' names. Default value is “_”.\n\nExample of usage:\n\n  stats_name_separator = \"-\""
+    },
+    {
+      "name": "tcp_connection_lifetime",
+      "documentation": "Lifetime in seconds for TCP sessions. TCP sessions which are inactive for longer than **tcp_connection_lifetime** will be closed by Kamailio. Default value is defined is 120. Setting this value to 0 will close the TCP connection pretty quick ![;-)](https://www.kamailio.org/wiki/lib/images/smileys/wink.svg).\n\nNote: As many SIP clients are behind NAT/Firewalls, the SIP proxy should not close the TCP connection as it is not capable of opening a new one.\n\nExample of usage:\n\n  tcp_connection_lifetime=3605"
+    },
+    {
+      "name": "rt_timer2_policy",
+      "documentation": "**Alias name: rt_stimer_policy**\n\nLike rt_policy but for the “slow” timer.\n\nrt_timer2_policy=\u003c0..3\u003e (default 0)"
+    },
+    {
+      "name": "src_ip",
+      "documentation": "Reference to source IP address of the SIP message.\n\nExample of usage:\n\n    if(src_ip==127.0.0.1)\n    {\n        [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"the message was sent from localhost!n\");\n    };"
+    },
+    {
+      "name": "src_port",
+      "documentation": "Reference to source port of the SIP message (from which port the message was sent by previous hop).\n\nExample of usage:\n\n    if(src_port==5061)\n    {\n        [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"message sent from port 5061n\");\n    }"
+    },
+    {
+      "name": "tcp_clone_rcvbuf",
+      "documentation": "Control if the received buffer should be cloned from the TCP stream, needed by functions working inside the SIP message buffer (such as msg_apply_changes()).\n\nDefault is 0 (don't clone), set it to 1 for cloning.\n\nExample of usage:\n\n  tcp_clone_rcvbuf=1"
+    },
+    {
+      "name": "rewritehost",
+      "documentation": "**Alias name: sethost, seth**\n\nRewrite the domain part of the R-URI with the value of function's parameter. Other parts of the R-URI like username, port and URI parameters remain unchanged.\n\nExample of usage:\n\n  rewritehost(\"1.2.3.4\");"
+    },
+    {
+      "name": "log_stderror",
+      "documentation": "With this parameter you can make Kamailio to write log and debug messages to standard error. Possible values are:\n\n- “yes” - write the messages to standard error\n\n- “no” - write the messages to syslog\n\nDefault value is “no”.\n\nFor more see: [http://www.kamailio.org/dokuwiki/doku.php/tutorials:debug-syslog-messages](http://www.kamailio.org/dokuwiki/doku.php/tutorials:debug-syslog-messages \"http://www.kamailio.org/dokuwiki/doku.php/tutorials:debug-syslog-messages\")\n\nExample of usage:\n\n  log_stderror=yes"
+    },
+    {
+      "name": "dns_cache_rec_pref",
+      "documentation": "dns_cache_rec_pref = number (default 0)\n  dns cache record preference, determines how new DNS records are stored internally in relation to existing entries.\n  Possible values:\n    0 - do not check duplicates\n    1 - prefer old records\n    2 - prefer new records\n    3 - prefer records with longer lifetime"
+    },
+    {
+      "name": "dns_cache_mem",
+      "documentation": "Maximum memory used for the dns cache in KB (default 500 K)\n\ndns_cache_mem = number"
+    },
+    {
+      "name": "dns_cache_negative_ttl",
+      "documentation": "Tells how long to keep negative DNS responses in cache. If set to 0, disables caching of negative responses. Default is 60 (seconds)."
+    },
+    {
+      "name": "resetflag",
+      "documentation": ""
+    },
+    {
+      "name": "switch",
+      "documentation": "SWITCH statement - it can be used to test the value of a pseudo-variable.\n\nIMPORTANT NOTE: 'break' can be used only to mark the end of a 'case' branch (as it is in shell scripts). If you are trying to use 'break' outside a 'case' block the script will return error – you must use 'return' there.\n\nExample of usage:\n\n    route {\n        route(1);\n        switch($retcode)\n        {\n            case -1:\n                log(\"process INVITE requests heren\");\n            break;\n            case 1:\n                log(\"process REGISTER requests heren\");\n            break;\n            case 2:\n            case 3:\n                log(\"process SUBSCRIBE and NOTIFY requests heren\");\n            break;\n            default:\n                log(\"process other requests heren\");\n       }\n\n        # switch of R-URI username\n        switch($rU)\n        {\n            case \"101\":\n                log(\"destination number is 101n\");\n            break;\n            case \"102\":\n                log(\"destination number is 102n\");\n            break;\n            case \"103\":\n            case \"104\":\n                log(\"destination number is 103 or 104n\");\n            break;\n            default:\n                log(\"unknown destination numbern\");\n       }\n    }\n\n    route[1]{\n        if(is_method(\"INVITE\"))\n        {\n            return(-1);\n        };\n        if(is_method(\"REGISTER\"))\n            return(1);\n        }\n        if(is_method(\"SUBSCRIBE\"))\n            return(2);\n        }\n        if(is_method(\"NOTIFY\"))\n            return(3);\n        }\n        return(-2);\n    }\n\nNOTE: take care while using 'return' - 'return(0)' stops the execution of the script."
+    },
+    {
+      "name": "latency_log",
+      "documentation": "Log level to print the messages related to latency.\n\nDefault value is -1 (L_ERR).\n\nlatency_log=3"
+    },
+    {
+      "name": "prefix",
+      "documentation": "Add the string parameter in front of username in R-URI.\n\nExample of usage:\n\n  prefix(\"00\");"
+    },
+    {
+      "name": "revert_uri",
+      "documentation": "Set the R-URI to the value of the R-URI as it was when the request was received by server (undo all changes of R-URI).\n\nExample of usage:\n\n  revert_uri();"
+    },
+    {
+      "name": "WSS",
+      "documentation": "This keyword can be used to test the value of 'proto' and check whether the SIP packet was received over WSS or not.\n\nExample of usage:\n\n  if(proto==WSS)\n  {\n      [log](http://www.opengroup.org/onlinepubs/009695399/functions/log.html)(\"the SIP message was received over WSSn\");\n  };"
+    },
+    {
+      "name": "log_prefix",
+      "documentation": "Specify the text to be prefixed to the log messages printed by Kamailio while processing a SIP message (that is, when executing route blocks). It can contain script variables that are evaluated at runtime. See [log_prefix_mode](index.html#log_prefix_mode \"cookbooks:devel:core ↵\") about when/how evaluation is done.\n\nIf a log message is printed from a part of the code executed out of routing blocks actions (e.g., can be timer, evapi worker process, …), there is no log prefix set, because this one requires a valid SIP message structure to work with.\n\nExample - prefix with message type (1 - request, 2 - response), CSeq and Call-ID:\n\nlog_prefix=\"{$mt $hdr(CSeq) $ci} \""
+    }
+  ]
+}
