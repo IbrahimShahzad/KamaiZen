@@ -1,10 +1,10 @@
 package document_manager
 
 import (
-	"KamaiZen/logger"
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"iter"
 	"maps"
 )
@@ -25,13 +25,13 @@ var CookBookDocs map[string]string
 
 func readJSONFromFile() error {
 	if len(cookbooksFile) == 0 {
-		logger.Error("Cookbooks file is empty")
+		log.Error().Msg("Cookbooks file is empty")
 		return fmt.Errorf("cookbooks file is empty")
 	}
 	var docs Docs
 	err := json.Unmarshal(cookbooksFile, &docs)
 	if err != nil {
-		logger.Error("Error reading JSON", err)
+		log.Error().Err(err).Msg("Error reading JSON")
 		return err
 	}
 	for _, doc := range docs.Docs {
@@ -42,7 +42,7 @@ func readJSONFromFile() error {
 }
 
 func init() {
-	logger.Debug("Initializing CookBookDocs")
+	log.Debug().Msg("Initializing CookBookDocs")
 	CookBookDocs = make(map[string]string)
 	readJSONFromFile()
 }

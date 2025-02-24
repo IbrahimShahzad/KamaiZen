@@ -2,10 +2,10 @@ package server
 
 import (
 	"KamaiZen/document_manager"
-	"KamaiZen/logger"
 	"KamaiZen/rpc"
 	"KamaiZen/settings"
 	"bufio"
+	"github.com/rs/zerolog/log"
 	"os"
 	"sync"
 )
@@ -37,7 +37,7 @@ func GetServerInstance() *Server {
 func (s *Server) StartServer(wg *sync.WaitGroup) {
 	defer wg.Done()
 	scanner := bufio.NewScanner(os.Stdin)
-	logger.Info("Starting server")
+	log.Info().Msg("Starting server")
 	scanner.Split(rpc.Split)
 
 	// Initialize EventManager and register handlers
@@ -45,9 +45,9 @@ func (s *Server) StartServer(wg *sync.WaitGroup) {
 
 	for scanner.Scan() {
 		msg := scanner.Bytes()
-		method, contents, error := rpc.DecodeMessage(msg)
-		if error != nil {
-			logger.Error("Error decoding message: ", error)
+		method, contents, e := rpc.DecodeMessage(msg)
+		if e != nil {
+			log.Error().Err(e).Msg("Error decoding message")
 			continue
 		}
 		handleMessage(method, contents, s.eventManager)
@@ -65,7 +65,7 @@ func (s *Server) RegisterDefaultHandlers() {
 }
 
 func (s *Server) StopServer() {
-	logger.Info("Stopping server")
+	log.Info().Msg("Stopping server")
 }
 
 func (s *Server) RegisterHandler(method string, handler func(contents []byte)) {
@@ -73,8 +73,8 @@ func (s *Server) RegisterHandler(method string, handler func(contents []byte)) {
 }
 
 func (s *Server) addKamailioMethods(settings settings.LSPSettings) {
-	logger.Info("Kamailio src detected at: ", settings.KamailioSourcePath)
-	logger.Info("Adding Hover and Completion methods")
+	log.Info().Str("path", settings.KamailioSourcePath).Msg("Kamailio src added")
+	log.Info().Msg("Adding Hover and Completion methods")
 	document_manager.Initialise(settings)
 	s.RegisterHandler(MethodHover, handleHover)
 	s.RegisterHandler(MethodCompletion, handleCompletion)

@@ -1,8 +1,8 @@
 package lsp
 
 import (
-	"KamaiZen/logger"
 	"KamaiZen/rpc"
+	"github.com/rs/zerolog/log"
 	"io"
 	"os"
 	"sync"
@@ -41,7 +41,7 @@ func Write(message []byte) {
 //	wg *sync.WaitGroup - The wait group to signal when done.
 func Start(wg *sync.WaitGroup) {
 	defer wg.Done()
-	logger.Info("Starting writer")
+	log.Info().Msg("Starting writer")
 	for {
 		select {
 		case message := <-writer_channel:

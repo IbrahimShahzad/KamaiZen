@@ -1,5 +1,7 @@
 package settings
 
+import "github.com/rs/zerolog"
+
 type LSPSettings struct {
 	KamailioSourcePath     string `json:"kamailioSourcePath"`
 	LogLevel               int    `json:"logLevel"`
@@ -14,22 +16,23 @@ var GlobalSettings LSPSettings
 //
 // Parameters:
 //
-//	kamailioSourcePath string - The path to the Kamailio source code.
+//	ksrc string - The path to the Kamailio source code.
 //	rootDir string - The root directory for the language server.
-//	log_level logger.LOGLEVEL - The logging level for the language server.
+//	ll int - The logging level for the language server.
 //	dch - Deprecated Comments Hints enabled/disabled
 //	diag - Diagnostics enabled/disabled
 //
 // Returns:
 //
 //	LSPSettings - The initialized settings.
-func NewLSPSettings(kamailioSourcePath string, rootDir string, log_level int, dch bool, diag bool) LSPSettings {
+func NewLSPSettings(ksrc string, rootDir string, ll int, dch bool, diag bool) LSPSettings {
 	GlobalSettings = LSPSettings{
-		KamailioSourcePath:     kamailioSourcePath,
-		LogLevel:               log_level,
+		KamailioSourcePath:     ksrc,
+		LogLevel:               ll,
 		DeprecatedCommentHints: dch,
 		EnableDiagnostics:      diag,
 	}
+	zerolog.SetGlobalLevel(zerolog.Level(ll))
 	return GlobalSettings
 }
 

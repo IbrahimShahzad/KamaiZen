@@ -1,9 +1,9 @@
 package kamailio_cfg
 
 import (
-	"KamaiZen/logger"
 	"context"
 
+	"github.com/rs/zerolog/log"
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
@@ -38,7 +38,7 @@ type Parser struct {
 //
 //	*Parser - A new instance of Parser.
 func NewParser() *Parser {
-	logger.Debug("Creating new parser")
+	log.Debug().Msg("Creating new parser")
 	p := Parser{
 		parser:   sitter.NewParser(),
 		tree:     nil,
@@ -70,12 +70,12 @@ func (p *Parser) GetLanguage() *sitter.Language {
 //	*sitter.Node - The root node of the constructed AST, or nil if parsing fails.
 func (p *Parser) Parse(sourceCode []byte) *sitter.Node {
 	if p.language == nil {
-		logger.Fatal("Parser not initialized", p.language)
+		log.Fatal().Msg("Parser not initialized")
 		return nil
 	}
 	tree, err := p.parser.ParseCtx(context.Background(), p.oldTree, sourceCode)
 	if err != nil {
-		logger.Error("Error parsing the source code: ", err)
+		log.Error().Err(err).Msg("Error parsing the source code")
 		p.oldTree = nil
 		return nil
 	}

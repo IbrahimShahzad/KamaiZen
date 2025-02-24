@@ -1,7 +1,5 @@
 package kamailio_cfg
 
-import "KamaiZen/logger"
-
 // Analyzer is a struct that holds the components necessary for analyzing Kamailio configurations.
 // It contains a builder for constructing the AST and a reference to the root AST node.
 type Analyzer struct {
@@ -12,7 +10,6 @@ type Analyzer struct {
 // NewAnalyzer creates and returns a new instance of Analyzer.
 // It initializes the builder field with a new KamailioASTBuilder.
 func NewAnalyzer() *Analyzer {
-	logger.Debug("Creating new analyzer")
 	return &Analyzer{
 		builder: NewKamailioASTBuilder(),
 	}

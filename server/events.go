@@ -1,11 +1,11 @@
 package server
 
 import (
-	"KamaiZen/logger"
 	"KamaiZen/lsp"
 	"KamaiZen/settings"
 	"KamaiZen/state_manager"
 	"encoding/json"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -37,7 +37,7 @@ func NewEventManager() *EventManager {
 // method: The name of the method for which the handler is being registered.
 // handler: The function to handle the event. It takes an state_manager.State, the contents as a byte slice, and a channel for state_manager.State.
 func (em *EventManager) RegisterHandler(method string, handler func(contents []byte)) {
-	logger.Infof("Registering handler for method: %s", method)
+	log.Info().Str("method", method).Msg("Registering handler")
 	em.handlers[method] = handler
 }
 
@@ -49,10 +49,9 @@ func (em *EventManager) RegisterHandler(method string, handler func(contents []b
 func (em *EventManager) Dispatch(method string, contents []byte) {
 	if handler, found := em.handlers[method]; found {
 		handler(contents)
-	} else {
-		logger.Errorf("No handler found for method: %s", method)
-		logger.Error("Contents: ", string(contents))
+		return
 	}
+	log.Error().Str("method", method).Msg("No handler found")
 }
 
 // handleInitialized handles the 'initialized' notification.
@@ -61,12 +60,12 @@ func (em *EventManager) Dispatch(method string, contents []byte) {
 // analyser_channel: A channel for state_manager.State to communicate with the handler.
 func handleInitialized(contents []byte) {
 	var notification lsp.InitializedNotification
-	logger.Info("Received initialized notification ", string(contents))
-	if error := json.Unmarshal(contents, &notification); error != nil {
-		logger.Error("Error unmarshalling initialized notfication: ", error)
+	log.Info().Str("contents", string(contents)).Msg("Received initialized notification")
+	if e := json.Unmarshal(contents, &notification); e != nil {
+		log.Error().Err(e).Msg("Error unmarshalling initialized notfication")
 		return
 	}
-	logger.Infof("Received initialized notification with %v", notification)
+	log.Info().Msgf("Received initialized notification with %v", notification)
 }
 
 // handleInitialize handles the 'initialize' request.
@@ -75,13 +74,15 @@ func handleInitialized(contents []byte) {
 // analyser_channel: A channel for state_manager.State to communicate with the handler.
 func handleInitialize(contents []byte) {
 	var request lsp.InitializeRequest
-	logger.Info("Received initialize request ", string(contents))
-	if error := json.Unmarshal(contents, &request); error != nil {
-		logger.Error("Error unmarshalling initialize request: ", error)
+	log.Info().Str("contents", string(contents)).Msg("Received initialize request")
+	if e := json.Unmarshal(contents, &request); e != nil {
+		log.Error().Err(e).Msg("Error unmarshalling initialize request")
 		return
 	}
-	logger.Infof("Connected to %s with version %s", request.Params.ClientInfo.Name, request.Params.ClientInfo.Version)
-	logger.Debug("Sending workspace configuration request")
+	log.Info().
+		Str("client", request.Params.ClientInfo.Name).
+		Str("version", request.Params.ClientInfo.Version).
+		Msg("Connected... Sending workspace configuration request")
 	config_request := lsp.NewWorkspaceConfigurationRequest(request.ID, lsp.ConfigurationParams{
 		Items: []lsp.ConfigurationItem{
 			{
@@ -89,20 +90,18 @@ func handleInitialize(contents []byte) {
 			},
 		},
 	})
-	logger.Debug("Sent workspace configuration request", config_request)
 	lsp.WriteResponse(config_request)
 }
 
 func handleWorkspaceConfiguration(contents []byte) {
 	var response lsp.WorkspaceConfigurationResponse
-	if error := json.Unmarshal(contents, &response); error != nil {
-		logger.Error("Error unmarshalling workspace configuration response: ", error)
+	if e := json.Unmarshal(contents, &response); e != nil {
+		log.Error().Err(e).Msg("Error unmarshalling workspace configuration response")
 		return
 	}
 	var initialize_response lsp.InitializeResponse
 	initialize_response = lsp.NewInitializeResponse(response.ID)
 	lsp.WriteResponse(initialize_response)
-	logger.Debug("Sent initialize response")
 	GetServerInstance().addKamailioMethods(
 		settings.NewLSPSettings(
 			response.Result[0].KamailioSourcePath,
@@ -118,14 +117,24 @@ func handleWorkspaceConfiguration(contents []byte) {
 // analyser_channel: A channel for state_manager.State to communicate with the handler.
 func handleDidOpen(contents []byte) {
 	var notification lsp.DidOpenTextDocumentNotification
-	if error := json.Unmarshal(contents, &notification); error != nil {
-		logger.Error("Error unmarshalling didOpen notification: ", error)
+	if e := json.Unmarshal(contents, &notification); e != nil {
+		log.Error().Err(e).Msg("Error unmarshalling didOpen notification")
 		return
 	}
-	logger.Info("Opened document with URI: ", notification.Params.TextDocument.URI)
-	dignostics := state_manager.GetState().OpenDocument(notification.Params.TextDocument.URI, notification.Params.TextDocument.Text)
+	log.Info().
+		Str("uri", string(notification.Params.TextDocument.URI)).
+		Msg("Opened document")
+	dignostics := state_manager.GetState().OpenDocument(
+		notification.Params.TextDocument.URI,
+		notification.Params.TextDocument.Text,
+	)
 	if len(dignostics) > 0 {
-		lsp.WriteResponse(lsp.NewPublishDiagnosticNotification(notification.Params.TextDocument.URI, dignostics))
+		lsp.WriteResponse(
+			lsp.NewPublishDiagnosticNotification(
+				notification.Params.TextDocument.URI,
+				dignostics,
+			),
+		)
 	}
 }
 
@@ -136,7 +145,7 @@ func handleDidOpen(contents []byte) {
 // analyser_channel: A channel for state_manager.State to communicate with the handler.
 // eventManager: The EventManager instance to use for dispatching the message.
 func handleMessage(method string, contents []byte, eventManager *EventManager) {
-	logger.Info("Received message with method: ", method)
+	log.Info().Str("method", method).Msg("Received message with method")
 	eventManager.Dispatch(method, contents)
 }
 
@@ -147,20 +156,34 @@ func handleMessage(method string, contents []byte, eventManager *EventManager) {
 func handleDidChange(contents []byte) {
 	var notification lsp.DidChangeTextDocumentNotification
 	state := state_manager.GetState()
-	if error := json.Unmarshal(contents, &notification); error != nil {
-		logger.Error("Error unmarshalling didChange notification: ", error)
+	if e := json.Unmarshal(contents, &notification); e != nil {
+		log.Error().Err(e).Msg("Error unmarshalling didChange notification")
 		return
 	}
 	for _, change := range notification.Params.ContentChanges {
 		diagnostics := state.UpdateDocument(notification.Params.TextDocument.URI, change.Text)
 		if len(diagnostics) > 0 {
-			logger.Debug("Sending diagnostics for document with URI: ", notification.Params.TextDocument.URI)
-			lsp.WriteResponse(lsp.NewPublishDiagnosticNotification(notification.Params.TextDocument.URI, diagnostics))
-		} else {
-			// clear diagnostics
-			logger.Debug("Clearing diagnostics for document with URI: ", notification.Params.TextDocument.URI)
-			lsp.WriteResponse(lsp.NewPublishDiagnosticNotification(notification.Params.TextDocument.URI, []lsp.Diagnostic{}))
+			log.Debug().
+				Str("uri", string(notification.Params.TextDocument.URI)).
+				Msg("Sending diagnostics for document")
+			lsp.WriteResponse(
+				lsp.NewPublishDiagnosticNotification(
+					notification.Params.TextDocument.URI,
+					diagnostics,
+				),
+			)
+			return
 		}
+		// clear diagnostics
+		log.Debug().
+			Str("uri", string(notification.Params.TextDocument.URI)).
+			Msg("Clearing diagnostics for document")
+		lsp.WriteResponse(
+			lsp.NewPublishDiagnosticNotification(
+				notification.Params.TextDocument.URI,
+				[]lsp.Diagnostic{},
+			),
+		)
 
 	}
 }
@@ -171,14 +194,11 @@ func handleDidChange(contents []byte) {
 // analyser_channel: A channel for state_manager.State to communicate with the handler.
 func handleHover(contents []byte) {
 	var request lsp.HoverRequest
-	if error := json.Unmarshal(contents, &request); error != nil {
-		logger.Error("Error unmarshalling hover request: ", error)
+	if e := json.Unmarshal(contents, &request); e != nil {
+		log.Error().Err(e).Msg("Error unmarshalling hover request")
 		return
 	}
-	logger.Debug("Hover request for document with URI: ", request.Params.TextDocument.URI)
-	logger.Debug("Position: ", request.Params.Position)
 	response := state_manager.GetState().Hover(request.ID, request.Params.TextDocument.URI, request.Params.Position)
-	logger.Infof("Sent hover response %v", response)
 	lsp.WriteResponse(response)
 }
 
@@ -188,14 +208,11 @@ func handleHover(contents []byte) {
 // analyser_channel: A channel for state_manager.State to communicate with the handler.
 func handleDefinition(contents []byte) {
 	var request lsp.DefinitionProviderRequest
-	if error := json.Unmarshal(contents, &request); error != nil {
-		logger.Error("Error unmarshalling definition request: ", error)
+	if e := json.Unmarshal(contents, &request); e != nil {
+		log.Error().Err(e).Msg("Error unmarshalling definition request")
 		return
 	}
-	logger.Debug("Definition request for document with URI: ", request.Params.TextDocument.URI)
-	logger.Debug("Position: ", request.Params.Position)
 	response := state_manager.GetState().Definition(request.ID, request.Params.TextDocument.URI, request.Params.Position)
-	logger.Debug("Sent definition response %v", response)
 	lsp.WriteResponse(response)
 }
 
@@ -205,13 +222,11 @@ func handleDefinition(contents []byte) {
 // analyser_channel: A channel for state_manager.State to communicate with the handler.
 func handleFormatting(contents []byte) {
 	var request lsp.DocumentFormattingRequest
-	if error := json.Unmarshal(contents, &request); error != nil {
-		logger.Error("Error unmarshalling formatting request: ", error)
+	if e := json.Unmarshal(contents, &request); e != nil {
+		log.Error().Err(e).Msg("Error unmarshalling formatting request")
 		return
 	}
-	logger.Debug("Formatting request for document with URI: ", request.Params.TextDocument.URI)
 	response := state_manager.GetState().Formatting(request.ID, request.Params.TextDocument.URI, request.Params.Options)
-	logger.Debug("Sent formatting response %v", response)
 	lsp.WriteResponse(response)
 }
 
@@ -221,11 +236,10 @@ func handleFormatting(contents []byte) {
 // analyser_channel: A channel for state_manager.State to communicate with the handler.
 func handleCompletion(contents []byte) {
 	var request lsp.CompletionRequest
-	if error := json.Unmarshal(contents, &request); error != nil {
-		logger.Error("Error unmarshalling completion request: ", error)
+	if e := json.Unmarshal(contents, &request); e != nil {
+		log.Error().Err(e).Msg("Error unmarshalling completion request")
 		return
 	}
-	logger.Debug("Completion request for document with URI: ", request.Params.TextDocument.URI)
 	response := state_manager.GetState().TextDocumentCompletion(request.ID, request.Params.TextDocument.URI, request.Params.Position)
 	lsp.WriteResponse(response)
 }

@@ -3,11 +3,10 @@ package state_manager
 import (
 	"KamaiZen/document_manager"
 	"KamaiZen/kamailio_cfg"
-	"KamaiZen/logger"
 	"KamaiZen/lsp"
-	"log"
 	"regexp"
 
+	"github.com/rs/zerolog/log"
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
@@ -49,16 +48,15 @@ func (s *StateTree) AddNode(uri lsp.DocumentURI, node *sitter.Node) {
 //
 //	uri lsp.DocumentURI - The URI of the document.
 //	node *sitter.Node - The starting node for the traversal.
-//	logger *log.Logger - The logger used to log the traversal.
 //	padding int - The padding used for indentation.
-func (s *StateTree) TraverseNode(uri lsp.DocumentURI, node *sitter.Node, logger *log.Logger, padding int) {
+func (s *StateTree) TraverseNode(uri lsp.DocumentURI, node *sitter.Node, padding int) {
 	// traverse the node and print the node
 	var i uint32
 	childCount := node.ChildCount()
 	for i = 0; i < childCount; i++ {
 		// Print spaces for padding
 		child := node.Child(int(i))
-		s.TraverseNode(uri, child, logger, padding+2)
+		s.TraverseNode(uri, child, padding+2)
 	}
 }
 
@@ -73,7 +71,7 @@ func GetNodeDocsAtPosition(uri lsp.DocumentURI, position lsp.Position, source_co
 	node := GetState().Analyzer.GetAST().Node
 	nodeAtPosition := getNodeAtPosition(node, position)
 	if nodeAtPosition == nil {
-		logger.Error("Node at position is nil")
+		log.Error().Msg("Node at position is nil")
 		return ""
 	}
 	switch nodeAtPosition.Type() {
@@ -116,7 +114,7 @@ func GetNodeDocsAtPosition(uri lsp.DocumentURI, position lsp.Position, source_co
 	if docs != "" {
 		return docs
 	}
-	logger.Error("Documentation not found", word, key)
+	log.Error().Str("word", word).Str("key", key).Msg("Documentation not found")
 	return "Documentation not found"
 }
 
@@ -288,7 +286,7 @@ func GetRouteDefinitionAtPosition(
 	node := GetState().Analyzer.GetAST().Node
 	nodeAtPosition := getNodeAtPosition(node, position)
 	if nodeAtPosition == nil {
-		logger.Error("Node at position is nil")
+		log.Error().Msg("Node at position is nil")
 		return nil
 	}
 	namedRoute := kamailio_cfg.QueryRoute(GetState().Analyzer, source_code)

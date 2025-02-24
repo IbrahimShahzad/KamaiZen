@@ -2,7 +2,6 @@ package state_manager
 
 import (
 	"KamaiZen/kamailio_cfg"
-	"KamaiZen/logger"
 	"KamaiZen/lsp"
 	"KamaiZen/settings"
 	"fmt"
@@ -54,8 +53,6 @@ func (s *State) updateState(DocumentURI lsp.DocumentURI, text string) {
 func InitializeState() State {
 	state = NewState()
 	state.Analyzer = kamailio_cfg.NewAnalyzer()
-	logger.Debugf("Parser: %v", state.Analyzer.GetParser())
-	logger.Debug("State initialized")
 	kamailio_cfg.InitialiseVariables()
 	return state
 }
@@ -222,7 +219,6 @@ func (s *State) Definition(
 //
 //	lsp.CompletionResponse - The completion response.
 func (s *State) TextDocumentCompletion(id int, uri lsp.DocumentURI, position lsp.Position) lsp.CompletionResponse {
-	logger.Debug("Completion request for document with URI: ", uri)
 	items := GetCompletionItems(uri)
 	return lsp.NewCompletionResponse(id, items)
 }

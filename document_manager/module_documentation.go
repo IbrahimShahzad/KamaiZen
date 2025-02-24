@@ -1,7 +1,6 @@
 package document_manager
 
 import (
-	"KamaiZen/logger"
 	"errors"
 )
 
@@ -38,7 +37,6 @@ func (m *moduleDocumentationMap) AddModuleDocs(moduleName string, moduleDocs Mod
 	if _, exists := m.ModuleDocs[moduleName]; exists && !overwrite {
 		return errors.New("Module already exists")
 	}
-	logger.Debug("docs added for module", moduleName)
 	m.ModuleDocs[moduleName] = moduleDocs
 	return nil
 }

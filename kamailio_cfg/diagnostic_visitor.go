@@ -1,10 +1,10 @@
 package kamailio_cfg
 
 import (
-	"KamaiZen/logger"
 	"KamaiZen/lsp"
 	"KamaiZen/settings"
 
+	"github.com/rs/zerolog/log"
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
@@ -90,7 +90,7 @@ func getXMLPaths(node *ASTNode, a *Analyzer) []sitter.Node {
 	// TODO: fix grammar. right now skipping the xml errors
 	qe, err := NewQueryExecutor(_XML_QUERY, node.Node, a.GetParser().language)
 	if err != nil {
-		logger.Error("Error creating query: ", err)
+		log.Error().Err(err).Msg("Error creating query")
 		return nil
 	}
 	for {
@@ -117,7 +117,7 @@ func (d *DiagnosticVisitor) addSyntaxErrors(node *ASTNode, a *Analyzer) {
 	var diagnostics []lsp.Diagnostic
 	qe, err := NewQueryExecutor(_ERROR_QUERY, node.Node, a.GetParser().language)
 	if err != nil {
-		logger.Error("Error creating query: ", err)
+		log.Error().Err(err).Msg("Error creating query")
 		return
 	}
 	xml_nodes := getXMLPaths(node, a)
@@ -155,7 +155,7 @@ func (d *DiagnosticVisitor) addDeprecatedCommentHints(node *ASTNode, a *Analyzer
 	var diagnostics []lsp.Diagnostic
 	qe, err := NewQueryExecutor(_DEPRECATED_COMMENT_QUERY, node.Node, a.GetParser().language)
 	if err != nil {
-		logger.Error("Error creating query: ", err)
+		log.Error().Err(err).Msg("Error creating query")
 		return
 	}
 	for {
@@ -184,7 +184,7 @@ func (d *DiagnosticVisitor) addUnreachableCodeWarnings(node *ASTNode, a *Analyze
 	var diagnostics []lsp.Diagnostic
 	qe, err := NewQueryExecutor(_RETURN_STATEMENTS_QUERY, node.Node, a.GetParser().language)
 	if err != nil {
-		logger.Error("Error creating query: ", err)
+		log.Error().Err(err).Msg("Error creating query")
 		return
 	}
 
@@ -200,7 +200,7 @@ func (d *DiagnosticVisitor) addUnreachableCodeWarnings(node *ASTNode, a *Analyze
 				// the next named siblings (statements) are unreachable
 				sibling_count := s.Parent().NamedChildCount()
 				if sibling_count == 0 {
-					logger.Debug("No siblings found for core function")
+					log.Debug().Msg("No siblings found for core function")
 					continue
 				}
 				start_node := s.NextNamedSibling()
@@ -232,7 +232,7 @@ func (d *DiagnosticVisitor) addInvalidExpressionErrors(node *ASTNode, a *Analyze
 	var diagnostics []lsp.Diagnostic
 	qe, err := NewQueryExecutor(_EXPRESSION_QUERY, node.Node, a.GetParser().language)
 	if err != nil {
-		logger.Error("Error creating query: ", err)
+		log.Error().Err(err).Msg("Error creating query")
 		return
 	}
 	for {
@@ -276,7 +276,7 @@ func (d *DiagnosticVisitor) addInvalidExpressionErrors(node *ASTNode, a *Analyze
 				continue
 			}
 			// Invalid single expression statement
-			logger.Debug("invalid single expression statement found", node.Type())
+			log.Debug().Str("node-type", node.Type()).Msg("invalid single expression statement found")
 			diagnostics = append(diagnostics,
 				createDiagnostic("Invalid statement", node.StartPoint(), node.EndPoint(), lsp.ERROR))
 
@@ -298,7 +298,7 @@ func (d *DiagnosticVisitor) addInvalidAssignmentExpressionErrors(node *ASTNode, 
 	// These should only be for within the block, top level assignments are to be ignored here
 	qe, err := NewQueryExecutor(_ASSINGMENT_EXPRESSION_QUERY, node.Node, a.GetParser().language)
 	if err != nil {
-		logger.Error("Error creating query: ", err)
+		log.Error().Err(err).Msg("Error creating query")
 		return
 	}
 	for {
@@ -325,7 +325,7 @@ func (d *DiagnosticVisitor) addInvalidAssignmentExpressionErrors(node *ASTNode, 
 
 			left := n.ChildByFieldName("left")
 			if left.Type() != PseudoVariableNodeType && left.Type() != PseudoVariableExpressionNodeType {
-				logger.Debug("Invalid assignment: left-hand-side ", left.Type())
+				log.Debug().Str("left-hand-side", left.Type()).Msg("Invalid assignment")
 				diagnostics = append(diagnostics,
 					createDiagnostic("Invalid assignment: left-hand-side ", node.StartPoint(), node.EndPoint(), lsp.ERROR))
 				continue

@@ -1,9 +1,9 @@
 package document_manager
 
 import (
-	"KamaiZen/logger"
 	"KamaiZen/settings"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"iter"
 	"maps"
 	"os"
@@ -175,11 +175,10 @@ func Initialise(s settings.LSPSettings) error {
 		return err
 	}
 	// Get All Modules
-	logger.Debug("Starting to add docs for modules", listOfModules)
 	for _, module := range listOfModules {
 		readme, err := os.ReadFile(path + "/" + module.Name() + _READEME_FILE)
 		if err != nil {
-			logger.Error(err)
+			log.Error().Err(err)
 			continue
 		}
 		functionDocs := extractFunctionDoc(strings.Split(string(readme), "\n"))
@@ -188,13 +187,13 @@ func Initialise(s settings.LSPSettings) error {
 			// we are overwriting the function documentation if it already exists
 			err = functionDocsMap.AddFunctionDoc(functionDoc, true)
 			if err != nil {
-				logger.Error("Skipping -- Error Adding function documentation for function: ", functionDoc.Name)
+				log.Error().Str("function", functionDoc.Name).Msg("Error Adding function documentation...skipping")
 			}
 		}
 		moduleDocs := newModuleDocs()
 		err = moduleDocs.AddFunctionDoc(module.Name(), functionDocsMap, true)
 		if err != nil {
-			logger.Error("Skipping -- Error Adding function documentation for module: ", module.Name())
+			log.Error().Str("module", module.Name()).Msg("Error Adding function documentation...skipping")
 		}
 		moduleDocumentationMapInstance.AddModuleDocs(module.Name(), moduleDocs, true)
 	}

@@ -1,21 +1,20 @@
 package main
 
 import (
-	"KamaiZen/logger"
 	"KamaiZen/lsp"
 	"KamaiZen/server"
 	"KamaiZen/settings"
 	"KamaiZen/state_manager"
 	"flag"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
 	"sync"
-)
 
-func initialise() {
-	logger.Info("Starting KamaiZen")
-	state_manager.InitializeState()
-	lsp.Initialise()
-}
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+)
 
 func main() {
 	v := flag.Bool("version", false, "print version")
@@ -25,7 +24,7 @@ func main() {
 		return
 	}
 	initialise()
-	defer logger.Info("KamaiZen stopped")
+	defer log.Info().Msg("KamaiZen stopped")
 	server := server.GetServerInstance()
 
 	var wg sync.WaitGroup
@@ -33,4 +32,24 @@ func main() {
 	go server.StartServer(&wg)
 	go lsp.Start(&wg)
 	wg.Wait()
+}
+
+func initialise() {
+	lev := zerolog.InfoLevel
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMicro
+	zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
+		return filepath.Base(file) + ":" + strconv.Itoa(line)
+	}
+	file, err := os.OpenFile(
+		"/tmp/kamaizen.log",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY,
+		0664,
+	)
+	if err != nil {
+		panic(err)
+	}
+	log.Logger = zerolog.New(file).With().Caller().Timestamp().Logger().Level(lev)
+	log.Info().Msg("Starting KamaiZen!")
+	state_manager.InitializeState()
+	lsp.Initialise()
 }

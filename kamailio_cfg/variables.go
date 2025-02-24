@@ -1,7 +1,7 @@
 package kamailio_cfg
 
 import (
-	"KamaiZen/logger"
+	"github.com/rs/zerolog/log"
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
@@ -63,7 +63,7 @@ func AddDlgVariable(name string, value string, scope string, identifier string, 
 func ExtractVariables(a *Analyzer, source_code []byte) {
 	q, err := NewQueryExecutor(_ASSINGMENT_QUERY, a.ast.Node, a.builder.parser.language)
 	if err != nil {
-		logger.Error("Error creating query executor: ", err)
+		log.Error().Err(err).Msg("Error creating query executor")
 		return
 	}
 	for {
