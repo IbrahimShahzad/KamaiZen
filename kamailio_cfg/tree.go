@@ -25,6 +25,7 @@ const (
 	UnaryExpressionNodeType          = "unary_expression"
 	BinaryExpressionNodeType         = "binary_expression"
 	CaseStatementNodeType            = "case_statement"
+	IFStatementNodeType              = "if_statement"
 )
 
 // UpdateTree updates the given parse tree by applying an edit operation.

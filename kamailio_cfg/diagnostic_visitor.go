@@ -356,7 +356,8 @@ func (d *DiagnosticVisitor) GetQueryDiagnostics(node *ASTNode, a *Analyzer) {
 	d.addInvalidExpressionErrors(node, a)
 	d.addInvalidAssignmentExpressionErrors(node, a)
 	d.addUnreachableCodeWarnings(node, a)
-	// d.addSyntaxErrors(node, a) // TODO: enable after the false errors are fixed
+	// FIXME: fix false positives
+	d.addSyntaxErrors(node, a)
 	if settings.GlobalSettings.DeprecatedCommentHints {
 		d.addDeprecatedCommentHints(node, a)
 	}

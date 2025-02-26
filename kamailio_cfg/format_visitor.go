@@ -23,7 +23,7 @@ func (v *FormattingVisitor) GetEdits() []lsp.TextEdit {
 }
 
 // TODO: This is a big todo
-func (v *FormattingVisitor) Visit(node *ASTNode) error {
+func (v *FormattingVisitor) Visit(node *ASTNode, a *Analyzer) error {
 
 	edits := []lsp.TextEdit{}
 	block_level := 0
@@ -120,7 +120,7 @@ func (v *FormattingVisitor) Visit(node *ASTNode) error {
 	}
 	for i := 0; i < int(node.Node.ChildCount()); i++ {
 		child := node.Node.Child(i)
-		v.Visit(&ASTNode{Node: child})
+		v.Visit(&ASTNode{Node: child}, a)
 	}
 	v.edits = append(v.edits, edits...)
 	return nil

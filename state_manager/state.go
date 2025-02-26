@@ -5,6 +5,8 @@ import (
 	"KamaiZen/lsp"
 	"KamaiZen/settings"
 	"fmt"
+
+	"github.com/rs/zerolog/log"
 )
 
 type State struct {
@@ -229,5 +231,8 @@ func (s *State) Formatting(id int, uri lsp.DocumentURI, options lsp.FormattingOp
 	// s.Analyzer.GetAST().Accept(visitor, s.Analyzer)
 	// edits := visitor.GetEdits()
 	// return lsp.NewDocumentFormattingResponse(id, edits)
-	return lsp.NewDocumentFormattingResponse(id, []lsp.TextEdit{})
+	log.Info().Msg("Formatting document")
+	new_text := kamailio_cfg.FixIndent(s.Documents[uri])
+	s.Analyzer.Build([]byte(new_text[0].NewText))
+	return lsp.NewDocumentFormattingResponse(id, kamailio_cfg.FixIndent(s.Documents[uri]))
 }
