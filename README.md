@@ -70,7 +70,7 @@ with `lazy.nvim`
 ```lua
 {
   'IbrahimShahzad/KamaiZen',
-  tag = 'v0.1.0', -- or branch = 'master'
+  tag = 'v0.1.1', -- or branch = 'master'
   build = 'go build',
   opts = {
     settings = {
