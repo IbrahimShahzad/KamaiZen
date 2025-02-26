@@ -48,6 +48,7 @@ func initialise() {
 	if err != nil {
 		panic(err)
 	}
+	zerolog.TimeFieldFormat = zerolog.TimestampFunc().UTC().Format("2006-01-02T15:04:05.000Z")
 	log.Logger = zerolog.New(file).With().Caller().Timestamp().Logger().Level(lev)
 	log.Info().Msg("Starting KamaiZen!")
 	state_manager.InitializeState()
