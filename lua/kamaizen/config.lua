@@ -41,8 +41,8 @@ local server = {
       bufkeymap('n', '[q', vim.cmd.cprev, 'Previous quickfix item')
       bufkeymap('n', ']q', vim.cmd.cnext, 'Next quickfix item')
       -- Diagnostic keymaps
-      bufkeymap('n', '[d', vim.diagnostic.goto_prev, 'Go to previous [D]iagnostic message')
-      bufkeymap('n', ']d', vim.diagnostic.goto_next, 'Go to next [D]iagnostic message')
+      bufkeymap('n', '[d', vim.diagnostic.jump { count = -1, float = true }, 'Go to previous [D]iagnostic message')
+      bufkeymap('n', ']d', vim.diagnostic.jump { count = 1, float = true }, 'Go to next [D]iagnostic message')
       bufkeymap('n', '<leader>e', vim.diagnostic.open_float, 'Show diagnostic [E]rror messages')
       bufkeymap('n', '<leader>q', vim.diagnostic.setloclist, 'Open diagnostic [Q]uickfix list')
       --
@@ -56,7 +56,6 @@ local server = {
         bufkeymap('n', 'gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
       end
       if client.server_capabilities.definitionProvider then
-        -- bufkeymap('n', 'gd', vim.lsp.buf.definition, 'Go to definition')
         bufkeymap('n', 'gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
       end
       if client.server_capabilities.typeDefinitionProvider then
@@ -66,24 +65,22 @@ local server = {
         bufkeymap('n', 'gI', vim.lsp.buf.implementation, '[G]oto [I]mplementation')
       end
       if client.server_capabilities.referencesProvider then
-        -- bufkeymap('n', 'gr', vim.lsp.buf.references, 'List references')
         bufkeymap('n', 'gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
       end
 
       if client.server_capabilities.documentSymbolProvider then
-        -- bufkeymap('n', '<leader>ds', vim.lsp.buf.document_symbol, '[D]ocument [S]ymbols' )
         bufkeymap('n', '<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
       end
       --
       if client.server_capabilities.documentFormattingProvider then
         bufkeymap({ 'n', 'x' }, '<F3>', function()
-          require('conform').format({ bufnr = bufnr, async = true })
+          require('conform').format { bufnr = bufnr, async = true }
         end, 'format buffer')
       end
       --
       if client.server_capabilities.inlayHintProvider and vim.lsp.inlay_hint then
         bufkeymap('n', '<leader>lh', function()
-          vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = bufnr }), { bufnr = bufnr })
+          vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = bufnr }, { bufnr = bufnr })
         end, '[l]sp [h]ints toggle')
       end
       --
@@ -103,29 +100,42 @@ local server = {
         --
       end
     end
-  
+
     -- --
-    vim.lsp.handlers['textDocument/hover'] = vim.lsp.with(vim.lsp.handlers.hover, {
-      border = 'rounded',
-    })
+    -- @deprecated
+    -- vim.lsp.handlers['textDocument/hover'] = vim.lsp.with(vim.lsp.handlers.hover, {
+    --   border = 'rounded',
+    -- })
     --
-    vim.lsp.handlers['textDocument/signatureHelp'] = vim.lsp.with(vim.lsp.handlers.signature_help, {
-      border = 'rounded',
-    })
     --
-    vim.lsp.handlers['textDocument/publishDiagnostics'] = vim.lsp.with(vim.lsp.diagnostic.on_publish_diagnostics, {
+    --@deprecated
+    -- vim.lsp.handlers['textDocument/signatureHelp'] = vim.lsp.with(vim.lsp.handlers.signature_help, {
+    --   border = 'rounded',
+    -- })
+    --
+
+    vim.diagnostic.config {
       signs = true,
-      underline = true,
+      float = true,
+      severity_sort = true,
       virtual_text = {
         spacing = 5,
-        min = vim.diagnostic.severity.HINT,
       },
-      update_in_insert = true,
-    })
+    }
+
+    -- @deprecated
+    -- vim.lsp.handlers['textDocument/publishDiagnostics'] = vim.lsp.with(vim.lsp.diagnostic.on_publish_diagnostics, {
+    --   signs = true,
+    --   underline = true,
+    --   virtual_text = {
+    --     spacing = 5,
+    --     min = vim.diagnostic.severity.HINT,
+    --   },
+    --   update_in_insert = true,
+    -- })
     -- --
     -- vim.cmd([[autocmd FileType * set formatoptions-=ro]])
   end,
-
 }
 
 return {
