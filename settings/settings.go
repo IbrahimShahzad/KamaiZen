@@ -37,5 +37,5 @@ func NewLSPSettings(ksrc string, rootDir string, ll int, dch bool, diag bool) LS
 }
 
 const RPC_VERSION = "2.0"
-const KAMAIZEN_VERSION = "0.1.1"
+const KAMAIZEN_VERSION = "0.1.2"
 const MY_NAME = "KamaiZen"
