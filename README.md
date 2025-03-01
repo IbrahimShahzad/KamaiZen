@@ -73,17 +73,18 @@ with `lazy.nvim`
 
 ```lua
 {
-    'IbrahimShahzad/KamaiZen',
-    tag = 'v0.1.2', -- or branch = 'master'
-    build = 'go build',
-    opts = {
-      settings = {
-        kamaizen = {
-          enableDeprecatedCommentHint = false, -- to enable hints for '#' comments
-          enableDiagnostics = true, -- to enable/disable diagnostics
-          KamailioSourcePath = '/path/to/kamailio', -- or use current dir vim.fn.getcwd()
-          loglevel = 3,
-        },
+  'IbrahimShahzad/KamaiZen',
+  branch = 'master',
+  -- or
+  -- version = 'V0.1.2',
+  build = 'go build',
+  opts = {
+    settings = {
+      kamaizen = {
+        enableDeprecatedCommentHint = false, -- to enable hints for '#' comments
+        enableDiagnostics = true, -- to enable/disable diagnostics
+        KamailioSourcePath = '/path/to/kamailio', -- or use current dir vim.fn.getcwd()
+        loglevel = 3,
       },
     },
     on_attach = function(client, bufnr)
@@ -107,7 +108,8 @@ with `lazy.nvim`
         end
       end
     end,
-  }
+  },
+}
 ```
 
 
