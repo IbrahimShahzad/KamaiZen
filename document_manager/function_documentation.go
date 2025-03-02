@@ -48,6 +48,7 @@ type FunctionDocumentation struct {
 	Parameters  string // the parameters of the function.
 	Description string // a description of what the function does.
 	Example     string // an example usage of the function.
+	Parent      string // the parent module of the function.
 }
 
 // Returns a formatted string representation of the function documentation.

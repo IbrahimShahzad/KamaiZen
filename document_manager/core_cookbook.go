@@ -42,7 +42,6 @@ func readJSONFromFile() error {
 }
 
 func init() {
-	log.Debug().Msg("Initializing CookBookDocs")
 	CookBookDocs = make(map[string]string)
 	readJSONFromFile()
 }

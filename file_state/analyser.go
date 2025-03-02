@@ -1,4 +1,4 @@
-package state_manager
+package file_state
 
 import (
 	"KamaiZen/document_manager"
@@ -12,53 +12,53 @@ import (
 
 // TODO: major refactoring required
 
-type StateTree struct {
-	nodes map[lsp.DocumentURI]*sitter.Node
-}
-
-// module level state tree
-var stateTreeCache StateTree
-
-// NewStateTree creates and returns a new instance of StateTree.
-// It initializes the nodes map.
+// type Tree struct {
+// 	nodes map[lsp.DocumentURI]*sitter.Node
+// }
 //
-// Returns:
+// // module level state tree
+// var treeCache Tree
 //
-//	StateTree - The initialized state tree.
-func NewStateTree() StateTree {
-	return StateTree{
-		nodes: make(map[lsp.DocumentURI]*sitter.Node),
-	}
-}
-
-// AddNode adds a node to the state tree for the given document URI.
+// // NewTree creates and returns a new instance of Tree.
+// // It initializes the nodes map.
+// //
+// // Returns:
+// //
+// //	Tree - The initialized state tree.
+// func NewTree() Tree {
+// 	return Tree{
+// 		nodes: make(map[lsp.DocumentURI]*sitter.Node),
+// 	}
+// }
 //
-// Parameters:
+// // AddNode adds a node to the state tree for the given document URI.
+// //
+// // Parameters:
+// //
+// //	uri lsp.DocumentURI - The URI of the document.
+// //	node *sitter.Node - The AST node to be added.
+// func (s *Tree) AddNode(uri lsp.DocumentURI, node *sitter.Node) {
+// 	s.nodes[uri] = node
+// }
 //
-//	uri lsp.DocumentURI - The URI of the document.
-//	node *sitter.Node - The AST node to be added.
-func (s *StateTree) AddNode(uri lsp.DocumentURI, node *sitter.Node) {
-	s.nodes[uri] = node
-}
-
-// TraverseNode traverses the AST starting from the given node and logs the traversal.
-// It recursively visits all child nodes and logs their information.
-//
-// Parameters:
-//
-//	uri lsp.DocumentURI - The URI of the document.
-//	node *sitter.Node - The starting node for the traversal.
-//	padding int - The padding used for indentation.
-func (s *StateTree) TraverseNode(uri lsp.DocumentURI, node *sitter.Node, padding int) {
-	// traverse the node and print the node
-	var i uint32
-	childCount := node.ChildCount()
-	for i = 0; i < childCount; i++ {
-		// Print spaces for padding
-		child := node.Child(int(i))
-		s.TraverseNode(uri, child, padding+2)
-	}
-}
+// // TraverseNode traverses the AST starting from the given node and logs the traversal.
+// // It recursively visits all child nodes and logs their information.
+// //
+// // Parameters:
+// //
+// //	uri lsp.DocumentURI - The URI of the document.
+// //	node *sitter.Node - The starting node for the traversal.
+// //	padding int - The padding used for indentation.
+// func (s *Tree) TraverseNode(uri lsp.DocumentURI, node *sitter.Node, padding int) {
+// 	// traverse the node and print the node
+// 	var i uint32
+// 	childCount := node.ChildCount()
+// 	for i = 0; i < childCount; i++ {
+// 		// Print spaces for padding
+// 		child := node.Child(int(i))
+// 		s.TraverseNode(uri, child, padding+2)
+// 	}
+// }
 
 // GetNodeDocsAtPosition retrieves the documentation for the node at the given position in the source code.
 // Parameters:
@@ -67,8 +67,8 @@ func (s *StateTree) TraverseNode(uri lsp.DocumentURI, node *sitter.Node, padding
 // - source_code: The source code as a byte slice.
 // Returns:
 // - The documentation string for the node at the specified position.
-func GetNodeDocsAtPosition(uri lsp.DocumentURI, position lsp.Position, source_code []byte) string {
-	node := GetState().Analyzer.GetAST().Node
+func (s *FileState) GetNodeDocsAtPosition(position lsp.Position, source_code []byte) string {
+	node := s.analyser.GetAST().Node
 	nodeAtPosition := getNodeAtPosition(node, position)
 	if nodeAtPosition == nil {
 		log.Error().Msg("Node at position is nil")
@@ -82,29 +82,23 @@ func GetNodeDocsAtPosition(uri lsp.DocumentURI, position lsp.Position, source_co
 			return document_manager.FindFunctionInAllModules(functionName)
 		case kamailio_cfg.AVPNodeType:
 			variableName := nodeAtPosition.Content(source_code)
-			v := kamailio_cfg.GetAVPVariable(variableName)
-			return v.GetDocs()
+			return s.vars.GetAVPVariable(variableName).GetDocs()
 		case kamailio_cfg.VARNodeType:
 			variableName := nodeAtPosition.Content(source_code)
-			v := kamailio_cfg.GetLocalVariable(variableName)
-			return v.GetDocs()
+			return s.vars.GetLocalVariable(variableName).GetDocs()
 		case kamailio_cfg.DlgVarNodeType:
 			variableName := nodeAtPosition.Content(source_code)
-			v := kamailio_cfg.GetDlgVariable(variableName)
-			return v.GetDocs()
+			return s.vars.GetDlgVariable(variableName).GetDocs()
 		}
 	case kamailio_cfg.AVPNodeType:
 		variableName := nodeAtPosition.ChildByFieldName("name").NamedChild(0).Content(source_code)
-		v := kamailio_cfg.GetAVPVariable(variableName)
-		return v.GetDocs()
+		return s.vars.GetAVPVariable(variableName).GetDocs()
 	case kamailio_cfg.VARNodeType:
 		variableName := nodeAtPosition.ChildByFieldName("name").NamedChild(0).Content(source_code)
-		v := kamailio_cfg.GetLocalVariable(variableName)
-		return v.GetDocs()
+		return s.vars.GetLocalVariable(variableName).GetDocs()
 	case kamailio_cfg.DlgVarNodeType:
 		variableName := nodeAtPosition.ChildByFieldName("name").NamedChild(0).Content(source_code)
-		v := kamailio_cfg.GetDlgVariable(variableName)
-		return v.GetDocs()
+		return s.vars.GetDlgVariable(variableName).GetDocs()
 	}
 	word := nodeAtPosition.Content(source_code)
 	// drop special characters
@@ -185,16 +179,6 @@ func TraverseNodeAndApply(node *sitter.Node, f func(*sitter.Node)) {
 
 }
 
-// getAllAvailableKeywords returns a map of all available keywords and their descriptions.
-//
-// Returns:
-//
-//	map[string]string - A map of keywords and their descriptions.
-func getAllAvailableKeywords() map[string]string {
-	// right now, we are hardcoding the keywords and using only SIP headers
-	return kamailio_cfg.SIPHeaders
-}
-
 // GetCompletionItems returns a list of completion items for the given document URI.
 //
 // Parameters:
@@ -204,7 +188,7 @@ func getAllAvailableKeywords() map[string]string {
 // Returns:
 //
 //	[]lsp.CompletionItem - A list of completion items.
-func GetCompletionItems(uri lsp.DocumentURI) []lsp.CompletionItem {
+func (s FileState) GetCompletionItems() []lsp.CompletionItem {
 	var completionItems []lsp.CompletionItem
 	functions := document_manager.GetAllAvailableFunctionDocs()
 	for _, function := range functions {
@@ -216,8 +200,7 @@ func GetCompletionItems(uri lsp.DocumentURI) []lsp.CompletionItem {
 		})
 	}
 
-	keywords := getAllAvailableKeywords()
-	for header, description := range keywords {
+	for header, description := range kamailio_cfg.SIPHeaders {
 		completionItems = append(completionItems, lsp.CompletionItem{
 			Detail:        "SIP Header",
 			Label:         header,
@@ -226,7 +209,7 @@ func GetCompletionItems(uri lsp.DocumentURI) []lsp.CompletionItem {
 		})
 	}
 
-	variables := kamailio_cfg.GetAVPVariables()
+	variables := s.vars.GetAVPVariables()
 	for variable, value := range variables {
 		completionItems = append(completionItems, lsp.CompletionItem{
 			Detail:        "AVP",
@@ -236,7 +219,7 @@ func GetCompletionItems(uri lsp.DocumentURI) []lsp.CompletionItem {
 		})
 	}
 
-	localVariables := kamailio_cfg.GetLocalVariables()
+	localVariables := s.vars.GetLocalVariables()
 	for variable, value := range localVariables {
 		completionItems = append(completionItems, lsp.CompletionItem{
 			Detail:        "Local Variable",
@@ -246,7 +229,7 @@ func GetCompletionItems(uri lsp.DocumentURI) []lsp.CompletionItem {
 		})
 	}
 
-	dlgVariables := kamailio_cfg.GetDlgVariables()
+	dlgVariables := s.vars.GetDlgVariables()
 	for variable, value := range dlgVariables {
 		completionItems = append(completionItems, lsp.CompletionItem{
 			Detail:        "Dialog Variable",
@@ -278,17 +261,24 @@ func GetCompletionItems(uri lsp.DocumentURI) []lsp.CompletionItem {
 
 }
 
-func GetRouteDefinitionAtPosition(
-	uri lsp.DocumentURI,
+func (s *FileState) GetRouteDefinitionAtPosition(
 	position lsp.Position,
-	source_code []byte,
-) *kamailio_cfg.NamedRoute {
-	node := GetState().Analyzer.GetAST().Node
+) *kamailio_cfg.Route {
+	node := s.analyser.GetAST().Node
 	nodeAtPosition := getNodeAtPosition(node, position)
 	if nodeAtPosition == nil {
 		log.Error().Msg("Node at position is nil")
 		return nil
 	}
-	namedRoute := kamailio_cfg.QueryRoute(GetState().Analyzer, source_code)
-	return namedRoute
+	// extract name of the route from node
+	routeName := ""
+	routeType := kamailio_cfg.RouteTypeUnknown
+	if nodeAtPosition.Type() == kamailio_cfg.RouteCallNodeType {
+		routeName = nodeAtPosition.NamedChild(0).Content(s.f.Content())
+		routeType = kamailio_cfg.RouteTypeNamed
+	} else if nodeAtPosition.Parent().Type() == kamailio_cfg.RouteCallNodeType {
+		routeName = nodeAtPosition.Parent().NamedChild(0).Content(s.f.Content())
+		routeType = kamailio_cfg.RouteTypeNamed
+	}
+	return s.routes.FindRouteByNameAndType(routeName, routeType)
 }

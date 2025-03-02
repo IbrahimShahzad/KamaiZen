@@ -14,6 +14,7 @@ const (
 	CompoundStatementNodeType        = "compound_statement"
 	CallExpressionNodeType           = "call_expression"
 	IdentifierNodeType               = "identifier"
+	RouteCallNodeType                = "route_call"
 	PseudoVariableNodeType           = "pseudo_variable"
 	VARNodeType                      = "var_"
 	AVPNodeType                      = "avp_var"
@@ -25,7 +26,9 @@ const (
 	UnaryExpressionNodeType          = "unary_expression"
 	BinaryExpressionNodeType         = "binary_expression"
 	CaseStatementNodeType            = "case_statement"
+	SwitchStatementNodeType          = "switch_statement"
 	IFStatementNodeType              = "if_statement"
+	EOSNodeType                      = "eos"
 )
 
 // UpdateTree updates the given parse tree by applying an edit operation.

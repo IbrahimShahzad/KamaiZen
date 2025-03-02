@@ -1,16 +1,19 @@
 package kamailio_cfg
 
-// Analyzer is a struct that holds the components necessary for analyzing Kamailio configurations.
-// It contains a builder for constructing the AST and a reference to the root AST node.
+import "sync"
+
+// Analyzer is a struct that holds the components necessary for analyzing Kamailio DSL.
 type Analyzer struct {
-	builder *KamailioASTBuilder
-	ast     *ASTNode
+	mu      sync.Mutex          // guards the fields below
+	builder *KamailioASTBuilder // The builder used to construct the AST
+	ast     *ASTNode            // The root node of the AST
 }
 
 // NewAnalyzer creates and returns a new instance of Analyzer.
 // It initializes the builder field with a new KamailioASTBuilder.
 func NewAnalyzer() *Analyzer {
 	return &Analyzer{
+		mu:      sync.Mutex{},
 		builder: NewKamailioASTBuilder(),
 	}
 }
@@ -22,6 +25,8 @@ func NewAnalyzer() *Analyzer {
 //
 //	content []byte - The content to be parsed into an AST.
 func (a *Analyzer) Build(content []byte) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	a.ast = a.builder.BuildAST(content)
 }
 
@@ -31,6 +36,8 @@ func (a *Analyzer) Build(content []byte) {
 //
 //	*ASTNode - The root node of the AST.
 func (a *Analyzer) GetAST() *ASTNode {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	return a.ast
 }
 
@@ -41,4 +48,12 @@ func (a *Analyzer) GetAST() *ASTNode {
 //	*Parser - The parser used by the builder.
 func (a *Analyzer) GetParser() *Parser {
 	return a.builder.parser
+}
+
+// Renew creates and returns a new instance of Analyzer.
+// It reinitializes the builder and the AST.
+func (a *Analyzer) Renew() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a = NewAnalyzer()
 }

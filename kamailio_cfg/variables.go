@@ -21,12 +21,12 @@ const (
 
 // global variables
 // gloabl variables are avps
-var avpVariables map[string]Variable
-
-// local variables
-var localVariables map[string]Variable
-
-var dlgVariables map[string]Variable
+// var avpVariables map[string]Variable
+//
+// // local variables
+// var localVariables map[string]Variable
+//
+// var dlgVariables map[string]Variable
 
 type Position struct {
 	start sitter.Point
@@ -42,29 +42,86 @@ type Variable struct {
 	position   Position
 }
 
-func InitialiseVariables() {
-	avpVariables = make(map[string]Variable)
-	dlgVariables = make(map[string]Variable)
-	localVariables = make(map[string]Variable)
+func (v Variable) GetDocs() string {
+
+	var header string
+
+	// scope also determines the type of variable
+	switch v.scope {
+	case _AVP_SCOPE:
+		header = "## User defined AVP\n\n\t" + v.name + "\n\n"
+	case _DLG_SCOPE:
+		header = "## User defined Dialog Variable\n\n\t" + v.name + "\n\n"
+	case _VAR_SCOPE:
+		header = "## User defined Local Variable\n\n\t" + v.name + "\n\n"
+	default:
+		// This shouldn't happen
+		header = "## User defined Variable\n\n\t" + v.name + "\n\n"
+	}
+	return header + "### Value\n\n\t" + v.value + "\n\n" + "### Scope\n\n\t" + v.scope + "\n"
 }
 
-func AddAVPVariable(name string, value string, identifier string, position Position) {
-	avpVariables[name] = Variable{name, value, _AVP_SCOPE, identifier, position}
+type Variables struct {
+	avpVariables   map[string]Variable
+	localVariables map[string]Variable
+	dlgVariables   map[string]Variable
 }
 
-func AddLocalVariable(name string, value string, scope string, identifier string, position Position) {
-	localVariables[name] = Variable{name, value, scope, identifier, position}
+func (v *Variables) GetAVPVariables() map[string]Variable {
+	return v.avpVariables
 }
 
-func AddDlgVariable(name string, value string, scope string, identifier string, position Position) {
-	dlgVariables[name] = Variable{name, value, scope, identifier, position}
+func (v *Variables) GetAVPVariable(name string) Variable {
+	id := _AVP_IDENTIFIER + "(" + name + ")"
+	return v.avpVariables[id]
 }
 
-func ExtractVariables(a *Analyzer, source_code []byte) {
+func (v *Variables) GetLocalVariable(name string) Variable {
+	id := _VAR_IDENTIFIER + "(" + name + ")"
+	return v.localVariables[id]
+}
+
+func (v *Variables) GetDlgVariable(name string) Variable {
+	id := _DLG_VAR_IDENTIFIER + "(" + name + ")"
+	return v.dlgVariables[id]
+}
+
+func (v *Variables) GetLocalVariables() map[string]Variable {
+	return v.localVariables
+}
+
+func (v *Variables) GetDlgVariables() map[string]Variable {
+	return v.dlgVariables
+}
+
+func NewVariables() *Variables {
+	return &Variables{
+		avpVariables:   make(map[string]Variable),
+		localVariables: make(map[string]Variable),
+		dlgVariables:   make(map[string]Variable),
+	}
+}
+
+func ExtractVariables(a *Analyzer, source_code []byte) Variables {
+	avpVariables := make(map[string]Variable)
+	localVariables := make(map[string]Variable)
+	dlgVariables := make(map[string]Variable)
+	addAVPVariable := func(name string, value string, identifier string, position Position) {
+		avpVariables[name] = Variable{name, value, _AVP_SCOPE, identifier, position}
+	}
+
+	addLocalVariable := func(name string, value string, scope string, identifier string, position Position) {
+		localVariables[name] = Variable{name, value, scope, identifier, position}
+	}
+
+	addDlgVariable := func(name string, value string, scope string, identifier string, position Position) {
+		dlgVariables[name] = Variable{name, value, scope, identifier, position}
+	}
+
 	q, err := NewQueryExecutor(_ASSINGMENT_QUERY, a.ast.Node, a.builder.parser.language)
 	if err != nil {
 		log.Error().Err(err).Msg("Error creating query executor")
-		return
+		return Variables{}
 	}
 	for {
 		match, ok := q.NextMatch()
@@ -83,7 +140,7 @@ func ExtractVariables(a *Analyzer, source_code []byte) {
 						_id := v.ChildByFieldName("name").Child(0).Content(source_code)
 						_name := _AVP_IDENTIFIER + "(" + _id + ")"
 						_val := node.ChildByFieldName("right").Content(source_code)
-						AddAVPVariable(_name, _val, _id, Position{
+						addAVPVariable(_name, _val, _id, Position{
 							start: node.StartPoint(),
 							end:   node.EndPoint(),
 						})
@@ -92,7 +149,7 @@ func ExtractVariables(a *Analyzer, source_code []byte) {
 						_name := _VAR_IDENTIFIER + "(" + _id + ")"
 						_val := node.ChildByFieldName("right").Content(source_code)
 						_scope := _VAR_SCOPE
-						AddLocalVariable(_name, _val, _scope, _id, Position{
+						addLocalVariable(_name, _val, _scope, _id, Position{
 							start: node.StartPoint(),
 							end:   node.EndPoint(),
 						})
@@ -101,7 +158,7 @@ func ExtractVariables(a *Analyzer, source_code []byte) {
 						_name := _DLG_VAR_IDENTIFIER + "(" + _id + ")"
 						_val := node.ChildByFieldName("right").Content(source_code)
 						_scope := _DLG_SCOPE
-						AddDlgVariable(_name, _val, _scope, _id, Position{
+						addDlgVariable(_name, _val, _scope, _id, Position{
 							start: node.StartPoint(),
 							end:   node.EndPoint(),
 						})
@@ -112,52 +169,9 @@ func ExtractVariables(a *Analyzer, source_code []byte) {
 			}
 		}
 	}
-}
-
-func (v *Variable) GetDocs() string {
-	if v == nil {
-		return ""
+	return Variables{
+		avpVariables:   avpVariables,
+		localVariables: localVariables,
+		dlgVariables:   dlgVariables,
 	}
-	var header string
-
-	// scope also determines the type of variable
-	switch v.scope {
-	case _AVP_SCOPE:
-		header = "## User defined AVP\n\n\t" + v.name + "\n\n"
-	case _DLG_SCOPE:
-		header = "## User defined Dialog Variable\n\n\t" + v.name + "\n\n"
-	case _VAR_SCOPE:
-		header = "## User defined Local Variable\n\n\t" + v.name + "\n\n"
-	default:
-		// This shouldn't happen
-		header = "## User defined Variable\n\n\t" + v.name + "\n\n"
-	}
-	return header + "### Value\n\n\t" + v.value + "\n\n" + "### Scope\n\n\t" + v.scope + "\n"
-}
-
-func GetAVPVariables() map[string]Variable {
-	return avpVariables
-}
-
-func GetAVPVariable(name string) Variable {
-	id := _AVP_IDENTIFIER + "(" + name + ")"
-	return avpVariables[id]
-}
-
-func GetLocalVariable(name string) Variable {
-	id := _VAR_IDENTIFIER + "(" + name + ")"
-	return localVariables[id]
-}
-
-func GetDlgVariable(name string) Variable {
-	id := _DLG_VAR_IDENTIFIER + "(" + name + ")"
-	return dlgVariables[id]
-}
-
-func GetLocalVariables() map[string]Variable {
-	return localVariables
-}
-
-func GetDlgVariables() map[string]Variable {
-	return dlgVariables
 }

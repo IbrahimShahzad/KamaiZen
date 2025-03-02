@@ -12,6 +12,7 @@ func FixIndent(content string) []lsp.TextEdit {
 	var formatted []string
 	indentLevel := 0
 	edits := []lsp.TextEdit{}
+	revertIndent := false
 
 	// Regex to enforce exactly one space before '{'
 	braceRegex := regexp.MustCompile(`(\S)\s*\{`)
@@ -34,6 +35,13 @@ func FixIndent(content string) []lsp.TextEdit {
 			}
 		}
 
+		// for switch-case statements, decrease indent level
+		// if the line starts with 'case' or 'default'
+		if strings.HasPrefix(trimmed, "case") || strings.HasPrefix(trimmed, "default") {
+			indentLevel--
+			revertIndent = true
+		}
+
 		// Enforce exactly one space before '{'
 		trimmed = braceRegex.ReplaceAllString(trimmed, "$1 {")
 
@@ -41,6 +49,10 @@ func FixIndent(content string) []lsp.TextEdit {
 		currentIndent := strings.Repeat(indentStr, indentLevel)
 		formatted = append(formatted, currentIndent+trimmed)
 
+		if revertIndent {
+			indentLevel++
+			revertIndent = false
+		}
 		// Increase indent level if line ends with an opening brace.
 		if strings.HasSuffix(trimmed, "{") {
 			indentLevel++

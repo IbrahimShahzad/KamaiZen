@@ -56,7 +56,9 @@ func (a *ASTNode) NamedChildCount() int {
 }
 
 func (a *ASTNode) Accept(v ASTVisitor, analyzer *Analyzer) {
+	analyzer.mu.Lock()
 	v.Visit(a, analyzer)
+	analyzer.mu.Unlock()
 }
 
 // KamailioASTBuilder is responsible for building the Abstract Syntax Tree (AST) for Kamailio configurations.

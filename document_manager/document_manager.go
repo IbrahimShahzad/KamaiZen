@@ -108,7 +108,7 @@ func getFunction(readme string, functionName string) FunctionDocumentation {
 //
 // lines: A slice of strings where each string is a line of documentation.
 // return: A slice of FunctionDocumentation structs containing the parsed documentation details.
-func extractFunctionDoc(lines []string) []FunctionDocumentation {
+func extractFunctionDoc(lines []string, mname string) []FunctionDocumentation {
 	var functionDocs []FunctionDocumentation
 	var functionDoc FunctionDocumentation
 	var inExample bool
@@ -146,6 +146,8 @@ func extractFunctionDoc(lines []string) []FunctionDocumentation {
 		}
 	}
 	if functionDoc.Name != "" {
+		// parent directory is the module name
+		functionDoc.Parent = mname
 		functionDocs = append(functionDocs, functionDoc)
 	}
 	return functionDocs
@@ -181,7 +183,7 @@ func Initialise(s settings.LSPSettings) error {
 			log.Error().Err(err)
 			continue
 		}
-		functionDocs := extractFunctionDoc(strings.Split(string(readme), "\n"))
+		functionDocs := extractFunctionDoc(strings.Split(string(readme), "\n"), module.Name())
 		functionDocsMap := FunctionDocumentationMap{Functions: make(map[string]FunctionDocumentation)}
 		for _, functionDoc := range functionDocs {
 			// we are overwriting the function documentation if it already exists
@@ -256,13 +258,15 @@ func GetAllFunctionsInModule(moduleName string) FunctionDocumentationMap {
 	return moduleDocs.Functions[moduleName]
 }
 
+type FunctionsDocumentation []FunctionDocumentation
+
 // GetAllAvailableFunctionDocs retrieves all available function documentation
 // from the module documentation map.
 //
 // return: A slice of FunctionDocumentation structs containing the documentation
 //
 //	for all functions across all modules.
-func GetAllAvailableFunctionDocs() []FunctionDocumentation {
+func GetAllAvailableFunctionDocs() FunctionsDocumentation {
 	var functionDocs []FunctionDocumentation
 	for _, moduleDocs := range moduleDocumentationMapInstance.ModuleDocs {
 		for _, functionDoc := range moduleDocs.Functions {
@@ -272,4 +276,13 @@ func GetAllAvailableFunctionDocs() []FunctionDocumentation {
 		}
 	}
 	return functionDocs
+}
+
+func (lf FunctionsDocumentation) GetFunction(name string) *FunctionDocumentation {
+	for _, f := range lf {
+		if f.Name == name {
+			return &f
+		}
+	}
+	return nil
 }

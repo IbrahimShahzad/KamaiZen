@@ -23,6 +23,24 @@ func NewDiagnosticVisitor() *DiagnosticVisitor {
 	return &DiagnosticVisitor{}
 }
 
+func DiagnosticVisitorFromDiagnostics(diagnostics []lsp.Diagnostic) *DiagnosticVisitor {
+	return &DiagnosticVisitor{diagnostics: diagnostics}
+}
+
+func (d *DiagnosticVisitor) UpdateFromDiagnostics(diagnostics []lsp.Diagnostic) {
+	if d == nil {
+		d = NewDiagnosticVisitor()
+	}
+	d.diagnostics = diagnostics
+}
+
+func (d *DiagnosticVisitor) ClearDiagnostics() {
+	if d == nil {
+		return
+	}
+	d.diagnostics = nil
+}
+
 // createDiagnostic creates a new diagnostic message with the given parameters.
 // It constructs an lsp.Diagnostic with the specified message, range, and severity.
 //
@@ -106,6 +124,16 @@ func getXMLPaths(node *ASTNode, a *Analyzer) []sitter.Node {
 	return xml_nodes
 }
 
+func (d *DiagnosticVisitor) addUnecessaryStatementErrors(node *ASTNode, a *Analyzer) {
+	// var diagnostics []lsp.Diagnostic
+	// statements that are neither function calls
+	// nor assignments
+	// nor return statements
+	// nor core functions
+	// are invalid
+	panic("not implemented")
+}
+
 // addSyntaxErrors identifies and collects syntax errors in the given AST node.
 // It uses a query executor to find syntax errors and creates diagnostics for each error found.
 //
@@ -114,6 +142,9 @@ func getXMLPaths(node *ASTNode, a *Analyzer) []sitter.Node {
 //	node *ASTNode - The AST node to be checked for syntax errors.
 //	a *Analyzer - The analyzer used to get the parser and language information.
 func (d *DiagnosticVisitor) addSyntaxErrors(node *ASTNode, a *Analyzer) {
+	if d == nil {
+		return
+	}
 	var diagnostics []lsp.Diagnostic
 	qe, err := NewQueryExecutor(_ERROR_QUERY, node.Node, a.GetParser().language)
 	if err != nil {
@@ -139,6 +170,75 @@ func (d *DiagnosticVisitor) addSyntaxErrors(node *ASTNode, a *Analyzer) {
 			}
 			diagnostics = append(diagnostics,
 				createDiagnostic("Syntax error", node.StartPoint(), node.EndPoint(), lsp.ERROR))
+		}
+	}
+	d.diagnostics = append(d.diagnostics, diagnostics...)
+}
+
+// addStatementSyntaxErrors identifies and collects syntax errors in the given AST node.
+// It uses a query executor to find syntax errors and creates diagnostics for each error found.
+//
+// Parameters:
+//
+//	node *ASTNode - The AST node to be checked for syntax errors.
+//	a *Analyzer - The analyzer used to get the parser and language information.
+func (d *DiagnosticVisitor) addStatementSyntaxErrors(node *ASTNode, a *Analyzer) {
+	var diagnostics []lsp.Diagnostic
+	qe, err := NewQueryExecutor(_STATEMENT_QUERY, node.Node, a.GetParser().language)
+	if err != nil {
+		log.Error().Err(err).Msg("diagnostic Error creating query")
+		return
+	}
+
+	message := "Syntax error: missing semicolon"
+
+	for {
+		match, ok := qe.NextMatch()
+		if !ok {
+			log.Error().Msg("diagnostic No more matches")
+			break
+		}
+		for _, capture := range match.Captures {
+			node := capture.Node // this is a statement
+			if node.NamedChildCount() == 0 {
+				continue
+			}
+			firstChild := node.NamedChild(0)
+			if firstChild.Type() == IFStatementNodeType ||
+				firstChild.Type() == CompoundStatementNodeType ||
+				firstChild.Type() == CaseStatementNodeType ||
+				firstChild.Type() == SwitchStatementNodeType {
+				continue
+			}
+
+			if firstChild.Type() == ReturnNodeType {
+				// return statement should be the last child
+				// and it should end with a semicolon
+				rn := firstChild
+				rnLastChild := rn.NamedChild(int(rn.NamedChildCount() - 1))
+				if rnLastChild.Type() != EOSNodeType {
+					diagnostics = append(diagnostics,
+						createDiagnostic(
+							message,
+							rn.StartPoint(),
+							rn.EndPoint(),
+							lsp.ERROR,
+						))
+				}
+				continue
+			}
+			// the rest of statements should end with a semicolon
+			// and it should be the last child
+			lastChild := node.NamedChild(int(node.NamedChildCount() - 1))
+			if lastChild.Type() != EOSNodeType {
+				diagnostics = append(diagnostics,
+					createDiagnostic(
+						message,
+						node.StartPoint(),
+						node.EndPoint(),
+						lsp.ERROR,
+					))
+			}
 		}
 	}
 	d.diagnostics = append(d.diagnostics, diagnostics...)
@@ -200,7 +300,6 @@ func (d *DiagnosticVisitor) addUnreachableCodeWarnings(node *ASTNode, a *Analyze
 				// the next named siblings (statements) are unreachable
 				sibling_count := s.Parent().NamedChildCount()
 				if sibling_count == 0 {
-					log.Debug().Msg("No siblings found for core function")
 					continue
 				}
 				start_node := s.NextNamedSibling()
@@ -265,7 +364,6 @@ func (d *DiagnosticVisitor) addInvalidExpressionErrors(node *ASTNode, a *Analyze
 			// 5. unary expression
 			// 6. binary expression
 			// 7. parenthesized expression
-
 			if node.Child(0).Type() == CoreFunctionNodeType ||
 				node.Child(0).Type() == AssignmentExpressionNodeType ||
 				node.Child(0).Type() == ReturnNodeType ||
@@ -276,7 +374,6 @@ func (d *DiagnosticVisitor) addInvalidExpressionErrors(node *ASTNode, a *Analyze
 				continue
 			}
 			// Invalid single expression statement
-			log.Debug().Str("node-type", node.Type()).Msg("invalid single expression statement found")
 			diagnostics = append(diagnostics,
 				createDiagnostic("Invalid statement", node.StartPoint(), node.EndPoint(), lsp.ERROR))
 
@@ -325,7 +422,6 @@ func (d *DiagnosticVisitor) addInvalidAssignmentExpressionErrors(node *ASTNode, 
 
 			left := n.ChildByFieldName("left")
 			if left.Type() != PseudoVariableNodeType && left.Type() != PseudoVariableExpressionNodeType {
-				log.Debug().Str("left-hand-side", left.Type()).Msg("Invalid assignment")
 				diagnostics = append(diagnostics,
 					createDiagnostic("Invalid assignment: left-hand-side ", node.StartPoint(), node.EndPoint(), lsp.ERROR))
 				continue
@@ -350,12 +446,22 @@ func (d *DiagnosticVisitor) addInvalidAssignmentExpressionErrors(node *ASTNode, 
 //
 //	node *ASTNode - The AST node to be checked for diagnostics.
 //	a *Analyzer - The analyzer used to get the parser and language information.
-func (d *DiagnosticVisitor) GetQueryDiagnostics(node *ASTNode, a *Analyzer) {
+func (d *DiagnosticVisitor) GetQueryDiagnostics(a *Analyzer) {
+
+	if a == nil {
+		return
+	}
+	if d == nil {
+		panic("DiagnosticVisitor is nil")
+	}
+
 	// Since its not incremental, we can clear the diagnostics
+	node := a.GetAST()
 	d.diagnostics = nil
 	d.addInvalidExpressionErrors(node, a)
 	d.addInvalidAssignmentExpressionErrors(node, a)
 	d.addUnreachableCodeWarnings(node, a)
+	d.addStatementSyntaxErrors(node, a)
 	// FIXME: fix false positives
 	d.addSyntaxErrors(node, a)
 	if settings.GlobalSettings.DeprecatedCommentHints {
@@ -369,5 +475,15 @@ func (d *DiagnosticVisitor) GetQueryDiagnostics(node *ASTNode, a *Analyzer) {
 //
 //	[]lsp.Diagnostic - A slice of diagnostics collected during the visit.
 func (d *DiagnosticVisitor) GetDiagnostics() []lsp.Diagnostic {
+	if d == nil || d.diagnostics == nil {
+		return []lsp.Diagnostic{}
+	}
 	return d.diagnostics
+}
+
+func (d *DiagnosticVisitor) GetDiagnosticsCount() int {
+	if d == nil || d.diagnostics == nil {
+		return 0
+	}
+	return len(d.diagnostics)
 }

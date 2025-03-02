@@ -2,38 +2,88 @@ package server
 
 import (
 	"KamaiZen/document_manager"
+	"KamaiZen/file"
+	sm "KamaiZen/file_state"
+	"KamaiZen/kamailio_cfg"
+	"KamaiZen/lsp"
 	"KamaiZen/rpc"
 	"KamaiZen/settings"
 	"bufio"
-	"github.com/rs/zerolog/log"
 	"os"
 	"sync"
+
+	"github.com/rs/zerolog/log"
 )
+
+type ServerState int
+
+const (
+	ServerCreated ServerState = iota
+	ServerInitializing
+	ServerInitialized
+	ServerShutDown
+)
+
+func (s ServerState) String() string {
+	return [...]string{"ServerCreated", "ServerInitializing", "ServerInitialized", "ServerShutDown"}[s]
+}
+
+func (s *ServerState) setState(newState ServerState) {
+	s = &newState
+}
 
 type Server struct {
 	eventManager *EventManager
+	stateMu      sync.Mutex
+	state        *ServerState
+
+	worksapce  file.Workspace
+	fileStates *sm.FileStates
+
+	diagnosticsMu         sync.Mutex // guards map and its values
+	diagnostics           map[lsp.DocumentURI]*kamailio_cfg.DiagnosticVisitor
+	cancelPrevDiagnostics func()
+}
+
+func (s *Server) SetState(newState ServerState) {
+	s.stateMu.Lock()
+	defer s.stateMu.Unlock()
+	s.state.setState(newState)
+}
+
+func IsServerInitialized() bool {
+	server := GetServerInstance()
+	server.stateMu.Lock()
+	defer server.stateMu.Unlock()
+	return *server.state == ServerInitialized
 }
 
 // create a single instance of the server
-var serverInstance *Server
+var _serverInstance *Server
+
+func NewServerInstance() *Server {
+	if _serverInstance == nil {
+		_serverInstance = &Server{
+			eventManager: NewEventManager(),
+			state:        new(ServerState),
+			diagnostics:  make(map[lsp.DocumentURI]*kamailio_cfg.DiagnosticVisitor),
+			worksapce:    file.NewWorkspace(),
+			fileStates:   sm.NewFileStates(),
+		}
+		_serverInstance.state.setState(ServerCreated)
+	}
+	return _serverInstance
+}
 
 // GetServerInstance returns the single instance of the server.
 func GetServerInstance() *Server {
-	if serverInstance == nil {
-		serverInstance = &Server{
-			eventManager: NewEventManager(),
-		}
-	}
-	return serverInstance
+	return _serverInstance
 }
 
 // StartServer starts the language server and listens for incoming messages from the client.
 // It initializes the event manager, registers handlers for various methods, and processes incoming messages.
 //
 // Parameters:
-//
-//	wg *sync.WaitGroup - The wait group to signal when the server is done.
-//	analyser_channel chan state_manager.State - The channel for communicating with the state manager.
 func (s *Server) StartServer(wg *sync.WaitGroup) {
 	defer wg.Done()
 	scanner := bufio.NewScanner(os.Stdin)
@@ -73,8 +123,8 @@ func (s *Server) RegisterHandler(method string, handler func(contents []byte)) {
 }
 
 func (s *Server) addKamailioMethods(settings settings.LSPSettings) {
-	log.Info().Str("path", settings.KamailioSourcePath).Msg("Kamailio src added")
-	log.Info().Msg("Adding Hover and Completion methods")
+	log.Debug().Str("path", settings.KamailioSourcePath).Msg("Kamailio src added")
+	log.Debug().Msg("Adding Hover and Completion methods")
 	document_manager.Initialise(settings)
 	s.RegisterHandler(MethodHover, handleHover)
 	s.RegisterHandler(MethodCompletion, handleCompletion)

@@ -1,10 +1,12 @@
 package server
 
 import (
+	"KamaiZen/file"
+	"KamaiZen/file_state"
 	"KamaiZen/lsp"
 	"KamaiZen/settings"
-	"KamaiZen/state_manager"
 	"encoding/json"
+
 	"github.com/rs/zerolog/log"
 )
 
@@ -65,6 +67,7 @@ func handleInitialized(contents []byte) {
 		log.Error().Err(e).Msg("Error unmarshalling initialized notfication")
 		return
 	}
+	GetServerInstance().SetState(ServerInitialized)
 	log.Info().Msgf("Received initialized notification with %v", notification)
 }
 
@@ -74,7 +77,6 @@ func handleInitialized(contents []byte) {
 // analyser_channel: A channel for state_manager.State to communicate with the handler.
 func handleInitialize(contents []byte) {
 	var request lsp.InitializeRequest
-	log.Info().Str("contents", string(contents)).Msg("Received initialize request")
 	if e := json.Unmarshal(contents, &request); e != nil {
 		log.Error().Err(e).Msg("Error unmarshalling initialize request")
 		return
@@ -83,13 +85,16 @@ func handleInitialize(contents []byte) {
 		Str("client", request.Params.ClientInfo.Name).
 		Str("version", request.Params.ClientInfo.Version).
 		Msg("Connected... Sending workspace configuration request")
-	config_request := lsp.NewWorkspaceConfigurationRequest(request.ID, lsp.ConfigurationParams{
-		Items: []lsp.ConfigurationItem{
-			{
-				Section: "kamaizen",
+	config_request := lsp.NewWorkspaceConfigurationRequest(
+		request.ID,
+		lsp.ConfigurationParams{
+			Items: []lsp.ConfigurationItem{
+				{
+					Section: "kamaizen",
+				},
 			},
-		},
-	})
+		})
+	GetServerInstance().SetState(ServerInitializing)
 	lsp.WriteResponse(config_request)
 }
 
@@ -105,7 +110,7 @@ func handleWorkspaceConfiguration(contents []byte) {
 	GetServerInstance().addKamailioMethods(
 		settings.NewLSPSettings(
 			response.Result[0].KamailioSourcePath,
-			"",
+			"", // TODO: Add root path
 			response.Result[0].Loglevel,
 			response.Result[0].EnableDeprecatedCommentHint,
 			response.Result[0].EnableDiagnostics))
@@ -116,23 +121,33 @@ func handleWorkspaceConfiguration(contents []byte) {
 // contents: The contents of the notification as a byte slice.
 // analyser_channel: A channel for state_manager.State to communicate with the handler.
 func handleDidOpen(contents []byte) {
+	log.Error().Msg("Did open Diagnostic")
 	var notification lsp.DidOpenTextDocumentNotification
 	if e := json.Unmarshal(contents, &notification); e != nil {
 		log.Error().Err(e).Msg("Error unmarshalling didOpen notification")
 		return
 	}
-	log.Info().
-		Str("uri", string(notification.Params.TextDocument.URI)).
-		Msg("Opened document")
-	dignostics := state_manager.GetState().OpenDocument(
+	uri := notification.Params.TextDocument.URI
+	text := []byte(notification.Params.TextDocument.Text)
+
+	log.Info().Str("uri", string(uri)).Msg("Opened document")
+	server := GetServerInstance()
+	server.fileStates.AddState(
 		notification.Params.TextDocument.URI,
-		notification.Params.TextDocument.Text,
+		file_state.NewState(
+			file.NewFile(uri, text),
+		),
 	)
-	if len(dignostics) > 0 {
+
+	server.diagnosticsMu.Lock()
+	defer server.diagnosticsMu.Unlock()
+	server.diagnostics[uri] = server.fileStates.OpenDocument(uri, string(text), server.diagnostics[uri])
+	log.Error().Msgf("Diagnostics -------- count: %d %v", server.diagnostics[uri].GetDiagnosticsCount(), server.diagnostics[uri])
+	if server.diagnostics[uri].GetDiagnosticsCount() > 0 && settings.GlobalSettings.EnableDiagnostics {
 		lsp.WriteResponse(
 			lsp.NewPublishDiagnosticNotification(
 				notification.Params.TextDocument.URI,
-				dignostics,
+				server.diagnostics[uri].GetDiagnostics(),
 			),
 		)
 	}
@@ -155,29 +170,33 @@ func handleMessage(method string, contents []byte, eventManager *EventManager) {
 // analyser_channel: A channel for state_manager.State to communicate with the handler.
 func handleDidChange(contents []byte) {
 	var notification lsp.DidChangeTextDocumentNotification
-	state := state_manager.GetState()
 	if e := json.Unmarshal(contents, &notification); e != nil {
 		log.Error().Err(e).Msg("Error unmarshalling didChange notification")
 		return
 	}
+	uri := notification.Params.TextDocument.URI
+	server := GetServerInstance()
 	for _, change := range notification.Params.ContentChanges {
-		diagnostics := state.UpdateDocument(notification.Params.TextDocument.URI, change.Text)
-		if len(diagnostics) > 0 {
-			log.Debug().
-				Str("uri", string(notification.Params.TextDocument.URI)).
-				Msg("Sending diagnostics for document")
+		server.diagnosticsMu.Lock()
+		server.diagnostics[uri].ClearDiagnostics()
+		server.diagnostics[uri] = server.fileStates.UpdateDocument(uri, change.Text, server.diagnostics[uri])
+		log.Error().Msgf("Diagnostics -------- count: %d %v", server.diagnostics[uri].GetDiagnosticsCount(), settings.GlobalSettings.EnableDiagnostics)
+		defer server.diagnosticsMu.Unlock()
+		if server.diagnostics[uri].GetDiagnosticsCount() > 0 &&
+			settings.GlobalSettings.EnableDiagnostics {
 			lsp.WriteResponse(
 				lsp.NewPublishDiagnosticNotification(
 					notification.Params.TextDocument.URI,
-					diagnostics,
+					server.diagnostics[uri].GetDiagnostics(),
 				),
 			)
 			return
 		}
 		// clear diagnostics
-		log.Debug().
-			Str("uri", string(notification.Params.TextDocument.URI)).
-			Msg("Clearing diagnostics for document")
+		log.Debug().Str("uri", string(uri)).Msg("Clearing diagnostics for document")
+		server.diagnosticsMu.Lock()
+		server.diagnostics[uri].ClearDiagnostics()
+		server.diagnosticsMu.Unlock()
 		lsp.WriteResponse(
 			lsp.NewPublishDiagnosticNotification(
 				notification.Params.TextDocument.URI,
@@ -198,8 +217,13 @@ func handleHover(contents []byte) {
 		log.Error().Err(e).Msg("Error unmarshalling hover request")
 		return
 	}
-	response := state_manager.GetState().Hover(request.ID, request.Params.TextDocument.URI, request.Params.Position)
-	lsp.WriteResponse(response)
+	lsp.WriteResponse(
+		GetServerInstance().fileStates.Hover(
+			request.ID,
+			request.Params.TextDocument.URI,
+			request.Params.Position,
+		),
+	)
 }
 
 // handleDefinition handles the 'definition' request.
@@ -212,8 +236,13 @@ func handleDefinition(contents []byte) {
 		log.Error().Err(e).Msg("Error unmarshalling definition request")
 		return
 	}
-	response := state_manager.GetState().Definition(request.ID, request.Params.TextDocument.URI, request.Params.Position)
-	lsp.WriteResponse(response)
+	lsp.WriteResponse(
+		GetServerInstance().fileStates.Definition(
+			request.ID,
+			request.Params.TextDocument.URI,
+			request.Params.Position,
+		),
+	)
 }
 
 // handleFormatting handles the 'formatting' request.
@@ -226,8 +255,13 @@ func handleFormatting(contents []byte) {
 		log.Error().Err(e).Msg("Error unmarshalling formatting request")
 		return
 	}
-	response := state_manager.GetState().Formatting(request.ID, request.Params.TextDocument.URI, request.Params.Options)
-	lsp.WriteResponse(response)
+	lsp.WriteResponse(
+		GetServerInstance().fileStates.Formatting(
+			request.ID,
+			request.Params.TextDocument.URI,
+			request.Params.Options,
+		),
+	)
 }
 
 // handleCompletion handles the 'completion' request.
@@ -240,6 +274,11 @@ func handleCompletion(contents []byte) {
 		log.Error().Err(e).Msg("Error unmarshalling completion request")
 		return
 	}
-	response := state_manager.GetState().TextDocumentCompletion(request.ID, request.Params.TextDocument.URI, request.Params.Position)
-	lsp.WriteResponse(response)
+	lsp.WriteResponse(
+		GetServerInstance().fileStates.TextDocumentCompletion(
+			request.ID,
+			request.Params.TextDocument.URI,
+			request.Params.Position,
+		),
+	)
 }

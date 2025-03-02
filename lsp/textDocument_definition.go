@@ -19,7 +19,7 @@ type DefinitionProviderParams struct {
 // It contains the response metadata and the location of the definition.
 type DefinitionProviderResponse struct {
 	Response
-	Result Location `json:"result"`
+	Result *Location `json:"result"`
 }
 
 // DefinitionProvider represents a provider for definition information.
@@ -40,18 +40,12 @@ type DefinitionProvider struct {
 // Returns:
 //
 //	DefinitionProviderResponse - The initialized response.
-func NewDefintionProviderResponse(id int, contents string, uri DocumentURI, start Position, end Position) DefinitionProviderResponse {
+func NewDefintionProviderResponse(id int, contents string, loc *Location) DefinitionProviderResponse {
 	return DefinitionProviderResponse{
 		Response: Response{
 			RPC: settings.RPC_VERSION,
 			ID:  id,
 		},
-		Result: Location{
-			URI: uri,
-			Range: Range{
-				Start: start,
-				End:   end,
-			},
-		},
+		Result: loc,
 	}
 }
