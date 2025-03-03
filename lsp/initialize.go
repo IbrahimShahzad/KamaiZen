@@ -84,7 +84,7 @@ func NewInitializeResponse(id int) InitializeResponse {
 				HoverProvider:      true,
 				DefinitionProvider: true,
 				// FIXME: Update to a proper formatter
-				DocumentFormattingProvider: true,
+				DocumentFormattingProvider: false,
 				CompletionProvider:         map[string]any{"resolveProvider": false},
 				DocumentHighlightProvider:  false,
 			},

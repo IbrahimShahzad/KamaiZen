@@ -110,7 +110,7 @@ func (s *Server) RegisterDefaultHandlers() {
 	s.RegisterHandler(MethodDidOpen, handleDidOpen)
 	s.RegisterHandler(MethodDidChange, handleDidChange)
 	s.RegisterHandler(MethodDefinition, handleDefinition)
-	s.RegisterHandler(MethodFormatting, handleFormatting)
+	// s.RegisterHandler(MethodFormatting, handleFormatting)
 	s.RegisterHandler(MethodConfigurationResponse, handleWorkspaceConfiguration)
 }
 
