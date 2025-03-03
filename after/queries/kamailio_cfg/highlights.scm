@@ -108,7 +108,6 @@
 
 "." @punctuation.delimiter
 "," @punctuation.delimiter
-";" @punctuation.delimiter
 ":" @punctuation.delimiter
 "::" @character.special
 
