@@ -5,9 +5,10 @@ import (
 	"KamaiZen/rpc"
 	"KamaiZen/settings"
 	"bufio"
-	"github.com/rs/zerolog/log"
 	"os"
 	"sync"
+
+	"github.com/rs/zerolog/log"
 )
 
 type Server struct {
@@ -60,7 +61,7 @@ func (s *Server) RegisterDefaultHandlers() {
 	s.RegisterHandler(MethodDidOpen, handleDidOpen)
 	s.RegisterHandler(MethodDidChange, handleDidChange)
 	s.RegisterHandler(MethodDefinition, handleDefinition)
-	s.RegisterHandler(MethodFormatting, handleFormatting)
+	// s.RegisterHandler(MethodFormatting, handleFormatting)
 	s.RegisterHandler(MethodConfigurationResponse, handleWorkspaceConfiguration)
 }
 
